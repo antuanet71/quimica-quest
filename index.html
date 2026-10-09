@@ -150,6 +150,15 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
 .fila-texto{display:flex;gap:10px}
 .fila-texto input{margin:0;font-size:26px;text-align:center;padding:14px}
 .mic{width:66px;flex:none;border-radius:18px;border:2px solid var(--borde);background:#ffffff12;font-size:28px;position:relative}
+.mic small{display:block;font-size:10px;font-weight:900;line-height:1.1}
+.mic.fijo{border-color:var(--rosa);color:var(--rosa);background:#f472b622}
+.fila-mic{display:flex;justify-content:center;margin-top:12px}
+.fila-mic .mic{width:auto;padding:6px 18px;height:auto}
+.etq-pista{align-self:center;font-size:13px;color:var(--sutil);background:#ffffff10;border-radius:10px;padding:4px 10px}
+.f-revancha{background:linear-gradient(90deg,#f472b622,#a78bfa22);border:2px solid var(--rosa);border-radius:18px;padding:16px;margin:4px 0 14px}
+.f-revancha b{display:block;font-family:'Lilita One';font-weight:400;font-size:24px;color:var(--rosa)}
+.f-revancha span{color:var(--sutil);font-size:14px}
+.f-revancha .fila-btn{margin-top:12px}
 .mic.escuchando{background:var(--rosa);border-color:var(--rosa);animation:latido 1s infinite}
 @keyframes latido{0%{box-shadow:0 0 0 0 #f472b6aa}100%{box-shadow:0 0 0 18px #f472b600}}
 .lanzar{flex:none}
@@ -173,6 +182,9 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
 .celda{aspect-ratio:1;border-radius:6px;border:1px solid var(--borde);background:#0b1230;padding:0;font-family:'Lilita One';font-size:clamp(9px,1.6vw,15px);transition:background .1s}
 .celda:hover{background:#22d3ee33;border-color:var(--cian)}
 .celda.correcta{background:var(--verde);color:#062;border-color:var(--verde)}
+.celda.noble{background:#f9a8d455;border-color:#f9a8d4}
+.celda.cerca1{background:#fb923c;color:#431407;border-color:#fb923c}
+.celda.cerca2{background:#a855f7;color:#2e1065;border-color:#a855f7}
 .celda.elegida-mal{background:var(--rojo);color:#400;border-color:var(--rojo)}
 .hueco-t{aspect-ratio:1}
 
@@ -281,7 +293,6 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
       <div class="combo" id="j-combo"></div>
       <div class="puntos"><span id="j-puntos">0</span><small>pts</small></div>
       <button class="btn-icono btn-sonido" id="btn-sonido-j" title="Sonido"></button>
-      <button class="btn-icono" id="btn-manos" title="Manos libres: el micro se enciende solo en cada pregunta">🎙️</button>
     </div>
 
     <div class="jefe" id="j-jefe" hidden>
@@ -316,6 +327,7 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
         <div><b id="f-racha"></b><span>mejor racha</span></div>
       </div>
       <div class="f-subida" id="f-subida" hidden></div>
+      <div class="f-revancha" id="f-revancha" hidden></div>
       <div id="f-fallos"></div>
       <p class="guardado" id="f-guardado"></p>
       <div class="fila-btn">
@@ -342,7 +354,7 @@ const CONFIG = {
    g2 = columna alternativa (el H aparece también encima del F) · t = metal | nometal | noble
    v = valencias. Para añadir o corregir algo, edita aquí. */
 const ELEMENTOS = [
-  {z:1,  s:'H',  n:'Hidrógeno', p:1, g:1,  g2:17, t:'nometal', v:[-1,1]},
+  {z:1,  s:'H',  n:'Hidrógeno', p:1, g:17, t:'nometal', v:[-1,1]},
   {z:2,  s:'He', n:'Helio',     p:1, g:18, t:'noble',   v:[]},
   {z:3,  s:'Li', n:'Litio',     p:2, g:1,  t:'metal',   v:[1]},
   {z:4,  s:'Be', n:'Berilio',   p:2, g:2,  t:'metal',   v:[2]},
@@ -585,10 +597,11 @@ const TEMATICAS = {
     nombre: 'Valencias', corto: 'Valencias', icono: '⚡', color: 'amarillo',
     lema: 'Todas las valencias de cada elemento', voz: true,
     pool: () => ELEMENTOS.filter(e => e.v.length),
-    pregunta(el) {
+    pregunta(el, opts) {
       return {
         tipo: 'texto', grande: el.s, pequeno: el.n, enunciado: '¿Cuáles son sus valencias?',
-        huecos: el.v, placeholder: 'Ej.: -1 +1', solucion: `${el.s}: ${el.v.map(fmtVal).join('  ')}`,
+        valores: el.v, pista: opts.pista === 'si',
+        placeholder: 'Ej.: -1 +1', solucion: `${el.s}: ${el.v.map(fmtVal).join('  ')}`,
         ayuda: 'Por voz: «menos uno, más uno» · El orden da igual',
         comprobar: e => comprobarValencias(el, e)
       };
@@ -627,7 +640,12 @@ const TEMATICAS = {
       return {
         tipo: 'tabla', grande: el.s, pequeno: el.n, enunciado: 'Toca su casilla',
         solucion: `${el.s}: periodo ${el.p}, columna ${etiquetaCol(el.g)}`, el,
-        comprobar: e => ({ parcial: (e.celda.p === el.p && (e.celda.g === el.g || e.celda.g === el.g2)) ? 1 : 0, celda: e.celda })
+        comprobar: e => {
+          const d = Math.abs(e.celda.p - el.p) + Math.abs(e.celda.g - el.g);
+          const parcial = d === 0 ? 1 : d === 1 ? 0.6 : d === 2 ? 0.3 : 0;
+          const aviso = d === 1 ? '🟠 ¡Muy cerca! Estaba justo al lado' : d === 2 ? '🟣 Cerca: a dos casillas' : '';
+          return { parcial, celda: e.celda, dist: d, aviso };
+        }
       };
     }
   }
@@ -637,7 +655,8 @@ Object.keys(TEMATICAS).forEach(id => TEMATICAS[id].id = id);
 const MODOS = {
   mision: { nombre: 'Misión', ico: '🎯', desc: '10 retos · 3 vidas' },
   crono:  { nombre: 'Contrarreloj', ico: '⏱️', desc: '60 segundos · fallo = −3 s' },
-  jefe:   { nombre: 'Jefe final', ico: '👾', desc: 'Tus elementos más rebeldes' }
+  jefe:   { nombre: 'Jefe final', ico: '👾', desc: 'Tus elementos más rebeldes' },
+  revancha: { nombre: 'Revancha', ico: '⚔️', desc: 'Los fallos de tu última partida', oculto: true }
 };
 
 const RANGOS = [[0, 'Aprendiz de laboratorio'], [150, 'Cazaátomos'], [400, 'Mente reactiva'],
@@ -672,7 +691,7 @@ const Sonido = {
    ========================================================= */
 const Voz = {
   SR: window.SpeechRecognition || window.webkitSpeechRecognition,
-  rec: null, activa: false, bloqueada: false, manos: false, reintentos: 0,
+  rec: null, activa: false, bloqueada: false, fijo: almacen.get('qq_voz', '1') === '1', reintentos: 0,
   disponible() { return !!this.SR && !this.bloqueada; },
   escuchar() {
     if (!this.disponible() || this.activa || !esperandoVoz()) return;
@@ -689,7 +708,7 @@ const Voz = {
     };
     r.onerror = ev => {
       if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(ev.error)) {
-        this.bloqueada = true; this.manos = false;
+        this.bloqueada = true;
         const av = $('#j-aviso-voz'); av.hidden = false;
         av.textContent = '🎤 El micrófono está bloqueado. Pulsa el candado de la barra de direcciones y permite el micrófono. Mientras, puedes escribir.';
         pintarRespuesta();
@@ -697,7 +716,7 @@ const Voz = {
     };
     r.onend = () => {
       this.activa = false; pintarMic();
-      if (this.manos && esperandoVoz() && this.reintentos++ < 6) setTimeout(() => this.escuchar(), 300);
+      if (this.fijo && esperandoVoz() && this.reintentos++ < 60) setTimeout(() => this.escuchar(), 300);
     };
     try { r.start(); this.rec = r; this.activa = true; pintarMic(); } catch (e) { this.activa = false; }
   },
@@ -705,15 +724,27 @@ const Voz = {
     if (this.rec) { try { this.rec.abort(); } catch (e) {} }
     this.activa = false; pintarMic();
   },
-  alternar() { this.activa ? this.parar() : (this.reintentos = 0, this.escuchar()); }
+  /* Un único botón: pulsar = micro fijo (escucha en todas las preguntas); volver a pulsar = apagado */
+  alternar() {
+    if (!this.disponible()) return toast('El micrófono no está disponible');
+    this.fijo = !this.fijo; almacen.set('qq_voz', this.fijo ? '1' : '0');
+    toast(this.fijo ? '🎤 Micro fijo: escucha en todas las preguntas' : '🎤 Micro apagado');
+    if (this.fijo) { this.reintentos = 0; this.escuchar(); } else this.parar();
+    pintarMic();
+  }
 };
 function esperandoVoz() {
   const P = E.partida;
   return !!(P && P.actual && !P.respondida && P.tem.voz && P.actual.tipo !== 'tabla' && $('#p-juego').classList.contains('activa'));
 }
 function pintarMic() {
-  const m = $('#j-mic'); if (m) m.classList.toggle('escuchando', Voz.activa);
-  $('#btn-manos').classList.toggle('on', Voz.manos);
+  const m = $('#j-mic');
+  if (m) {
+    m.classList.toggle('fijo', Voz.fijo);
+    m.classList.toggle('escuchando', Voz.activa);
+    m.title = Voz.fijo ? 'Micro fijo (pulsa para apagarlo)' : 'Micro apagado (pulsa para dejarlo fijo)';
+    const etq = $('#j-mic-etq'); if (etq) etq.textContent = Voz.fijo ? 'Micro fijo' : 'Micro apagado';
+  }
   if (!Voz.activa && $('#j-oido').textContent.startsWith('Escuchando')) $('#j-oido').textContent = '';
   if (Voz.activa) $('#j-oido').textContent = 'Escuchando…';
 }
@@ -725,7 +756,7 @@ const E = {
   usuario: null, alumno: null,
   progreso: { xp: 0, mejorRacha: 0, partidas: 0, stats: {} },
   resumen: { suma: 0, max: 0, intentos: 0 },
-  tem: null, opts: { dir: almacen.get('qq_dir', 'mixto') }, modo: null, partida: null
+  tem: null, opts: { dir: almacen.get('qq_dir', 'mixto'), pista: almacen.get('qq_pista', 'no') }, modo: null, partida: null, revancha: null
 };
 
 /* =========================================================
@@ -847,10 +878,13 @@ function abrirModos(id) {
   $('#mo-titulo').textContent = t.nombre;
   $('#mo-lema').textContent = t.lema;
   const dirs = [['sn', 'Símbolo → Nombre'], ['ns', 'Nombre → Símbolo'], ['mixto', 'Mezcla']];
+  const pistas = [['no', '🙈 Sin pista'], ['si', '👁️ Con pista: ver cuántas valencias son']];
   $('#mo-dir').innerHTML = t.direcciones ? dirs.map(([k, txt]) =>
-    `<button class="chip ${E.opts.dir === k ? 'on' : ''}" onclick="elegirDir('${k}')">${txt}</button>`).join('') : '';
+    `<button class="chip ${E.opts.dir === k ? 'on' : ''}" onclick="elegirDir('${k}')">${txt}</button>`).join('')
+    : t.id === 'valencias' ? pistas.map(([k, txt]) =>
+    `<button class="chip ${E.opts.pista === k ? 'on' : ''}" onclick="elegirPista('${k}')">${txt}</button>`).join('') : '';
   const nDeb = debiles(t).length;
-  $('#mo-lista').innerHTML = Object.entries(MODOS).map(([k, m]) => {
+  $('#mo-lista').innerHTML = Object.entries(MODOS).filter(([k, m]) => !m.oculto).map(([k, m]) => {
     const bloqueado = k === 'jefe' && nDeb < 4;
     const desc = bloqueado ? `🔒 Aparece cuando tengas 4 elementos pendientes (llevas ${nDeb})` : m.desc;
     return `<button class="modo" ${bloqueado ? 'disabled' : ''} onclick="empezar('${k}')">
@@ -859,26 +893,27 @@ function abrirModos(id) {
   mostrar('p-modos');
 }
 function elegirDir(k) { E.opts.dir = k; almacen.set('qq_dir', k); abrirModos(E.tem.id); }
+function elegirPista(k) { E.opts.pista = k; almacen.set('qq_pista', k); abrirModos(E.tem.id); }
 
 /* =========================================================
    PARTIDA
    ========================================================= */
 function empezar(modo) {
   limpiarPartida();
+  const R = modo === 'revancha' ? E.revancha : null;
+  if (R) E.tem = R.tem;
   const tem = E.tem;
   E.modo = modo;
   E.partida = {
-    tem, modo, opts: { ...E.opts }, puntos: 0, aciertos: 0, fallos: 0, racha: 0, rachaMax: 0,
-    vidas: modo === 'crono' ? 0 : 3, n: 0, items: {}, fallados: new Map(), recientes: [],
-    cola: [], debiles: modo === 'jefe' ? debiles(tem) : [], jefeMax: 8, jefeVida: 8,
+    tem, modo, opts: R ? { ...R.opts } : { ...E.opts }, puntos: 0, aciertos: 0, fallos: 0, racha: 0, rachaMax: 0,
+    vidas: (modo === 'crono' || R) ? 0 : 3, n: 0, items: {}, fallados: new Map(), recientes: [],
+    cola: R ? barajar(R.els) : [], total: R ? R.els.length : 10,
+    debiles: modo === 'jefe' ? debiles(tem) : [], jefeMax: 8, jefeVida: 8,
     fin: modo === 'crono' ? Date.now() + 60000 : 0, inicio: Date.now(),
     actual: null, el: null, respondida: false, tSig: null, timer: null
   };
   $('#j-jefe').hidden = modo !== 'jefe';
   pintarSonido();
-  // Micro automático: activado por defecto solo en Elementos y símbolos (se puede cambiar con 🎙️)
-  Voz.manos = Voz.disponible() && tem.voz &&
-    almacen.get('qq_manos_' + tem.id, tem.id === 'elementos' ? '1' : '0') === '1';
   $('#j-aviso-voz').hidden = !Voz.bloqueada;
   if (Voz.bloqueada) $('#j-aviso-voz').textContent = '🎤 El micrófono está bloqueado. Pulsa el candado de la barra de direcciones y permite el micrófono. Mientras, puedes escribir.';
   mostrar('p-juego');
@@ -910,6 +945,7 @@ function elegirElemento(P) {
     if (!P.cola.length) P.cola = barajar(P.debiles);
     return P.cola.shift();
   }
+  if (P.modo === 'revancha') return P.cola.shift();
   const pool = P.tem.pool().filter(el => !P.recientes.includes(el.s));
   const peso = el => {
     const s = E.progreso.stats[P.tem.id + ':' + el.s];
@@ -926,6 +962,7 @@ function siguiente() {
   if (P.modo === 'mision' && (P.n >= 10 || P.vidas <= 0)) return terminar();
   if (P.modo === 'jefe' && (P.jefeVida <= 0 || P.vidas <= 0)) return terminar();
   if (P.modo === 'crono' && Date.now() >= P.fin) return terminar();
+  if (P.modo === 'revancha' && !P.cola.length) return terminar();
 
   const el = elegirElemento(P);
   P.el = el;
@@ -934,17 +971,19 @@ function siguiente() {
   P.respondida = false;
   Voz.reintentos = 0;
   pintarPregunta();
-  if (Voz.manos && esperandoVoz()) setTimeout(() => Voz.escuchar(), 250);
+  if (Voz.fijo && esperandoVoz()) setTimeout(() => Voz.escuchar(), 250);
 }
 
 function pintarHud() {
   const P = E.partida;
-  $('#j-vidas').innerHTML = P.modo === 'crono' ? '⏱️' :
+  $('#j-vidas').innerHTML = P.modo === 'crono' ? '⏱️' : P.modo === 'revancha' ? '⚔️' :
     [0, 1, 2].map(i => `<span class="${i < P.vidas ? '' : 'perdida'}">❤️</span>`).join('');
   $('#j-puntos').textContent = P.puntos;
   const mult = multiplicador(P.racha);
   $('#j-combo').textContent = mult > 1 ? '×' + mult : (P.racha ? '🔥' + P.racha : '');
-  if (P.modo === 'mision') { $('#j-prog').style.width = (P.n * 10) + '%'; $('#j-prog-txt').textContent = P.n + '/10'; }
+  if (P.modo === 'mision' || P.modo === 'revancha') {
+    $('#j-prog').style.width = (100 * P.n / P.total) + '%'; $('#j-prog-txt').textContent = P.n + '/' + P.total;
+  }
   if (P.modo === 'jefe') {
     $('#j-prog').style.width = (100 * (P.jefeMax - P.jefeVida) / P.jefeMax) + '%';
     $('#j-prog-txt').textContent = (P.jefeMax - P.jefeVida) + '/' + P.jefeMax;
@@ -960,7 +999,9 @@ function pintarPregunta() {
   $('#j-enunciado').textContent = q.enunciado;
   const g = $('#j-grande'); g.textContent = q.grande; g.className = 'grande' + (q.largo ? ' largo' : '');
   $('#j-pequeno').textContent = q.pequeno || '';
-  $('#j-huecos').innerHTML = q.huecos ? q.huecos.map(() => '<span class="hueco">?</span>').join('') : '';
+  $('#j-huecos').innerHTML = !q.valores ? '' : q.pista
+    ? q.valores.map(() => '<span class="hueco">?</span>').join('') + '<span class="etq-pista">👁️ Con pista</span>'
+    : '<span class="etq-pista">🙈 Sin pista: di todas las que sepas</span>';
   $('#j-feedback').innerHTML = '';
   $('#j-oido').textContent = '';
   pintarRespuesta();
@@ -972,7 +1013,7 @@ function pintarRespuesta() {
   const conVoz = P.tem.voz && Voz.disponible();
   if (q.tipo === 'texto') {
     zona.innerHTML = `<div class="fila-texto">
-        ${conVoz ? '<button class="mic" id="j-mic" title="Hablar">🎤</button>' : ''}
+        ${conVoz ? '<button class="mic" id="j-mic">🎤<small id="j-mic-etq"></small></button>' : ''}
         <input id="j-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(q.placeholder)}">
         <button class="btn lanzar" id="j-lanzar">Lanzar</button>
       </div><p class="ayuda">${esc(conVoz ? q.ayuda : 'Escribe tu respuesta y pulsa Enter')}</p>`;
@@ -994,7 +1035,8 @@ function pintarRespuesta() {
   } else if (q.tipo === 'opciones') {
     zona.innerHTML = `<div class="opciones">${q.opciones.map(o =>
       `<button class="opcion" data-id="${o.id}">${esc(o.txt)}<small>tecla ${o.tecla}</small></button>`).join('')}</div>
-      <p class="ayuda">${conVoz ? '<button class="mic" id="j-mic" style="width:52px;height:44px;font-size:20px;vertical-align:middle">🎤</button> ' : ''}${esc(conVoz ? q.ayuda : 'Teclas 1 · 2 · 3')}</p>`;
+      ${conVoz ? '<div class="fila-mic"><button class="mic" id="j-mic">🎤<small id="j-mic-etq"></small></button></div>' : ''}
+      <p class="ayuda">${esc(conVoz ? q.ayuda : 'Teclas 1 · 2 · 3')}</p>`;
     zona.querySelectorAll('.opcion').forEach(b => b.onclick = () => responder({ opcion: b.dataset.id, textos: [] }));
     if (conVoz) $('#j-mic').onclick = () => Voz.alternar();
   } else if (q.tipo === 'tabla') {
@@ -1005,22 +1047,19 @@ function pintarRespuesta() {
   pintarMic();
 }
 
-function existeCelda(p, g) {
-  if (p === 1) return g === 1 || g === 17 || g === 18;
-  if (p <= 3) return g <= 2 || g >= 13;
-  if (p <= 6) return true;
-  return g <= 5;
-}
 function tablaHTML() {
+  const pos = {};
+  ELEMENTOS.forEach(e => pos[e.p + '-' + e.g] = e);
   let h = '<div class="tabla"><span></span>';
   for (let g = 1; g <= 18; g++) h += `<span class="cab">${etiquetaCol(g)}</span>`;
   for (let p = 1; p <= 7; p++) {
     h += `<span class="per">${p}</span>`;
     for (let g = 1; g <= 18; g++) {
-      h += existeCelda(p, g) ? `<button class="celda" data-p="${p}" data-g="${g}"></button>` : '<span class="hueco-t"></span>';
+      const e = pos[p + '-' + g];
+      h += e ? `<button class="celda${e.t === 'noble' ? ' noble' : ''}" data-p="${p}" data-g="${g}"></button>` : '<span class="hueco-t"></span>';
     }
   }
-  return h + '</div>';
+  return h + '</div><p class="ayuda">🟠 al lado: 6 pts · 🟣 a dos casillas: 3 pts</p>';
 }
 
 /* =========================================================
@@ -1032,7 +1071,7 @@ function responder(entrada) {
   if (P.modo === 'crono' && Date.now() >= P.fin) return terminar();
   const q = P.actual, el = P.el;
   const r = q.comprobar(entrada);
-  if (r.nada) { toast('No te he entendido 🤔 Prueba otra vez'); if (Voz.manos) setTimeout(() => Voz.escuchar(), 400); return; }
+  if (r.nada) { toast('No te he entendido 🤔 Prueba otra vez'); if (Voz.fijo) setTimeout(() => Voz.escuchar(), 400); return; }
 
   P.respondida = true;
   Voz.parar();
@@ -1059,7 +1098,7 @@ function responder(entrada) {
     const pts = Math.round(10 * r.parcial);
     P.puntos += pts;
     if (!casi) {
-      if (P.modo === 'crono') P.fin -= 3000; else P.vidas--;
+      if (P.modo === 'crono') P.fin -= 3000; else if (P.modo !== 'revancha') P.vidas--;
     }
     html = (casi ? `<span class="pts" style="color:var(--amarillo)">¡Casi! +${pts}</span> ` : '❌ ') + `<span class="sol">${esc(q.solucion)}</span>`;
     $('#j-carta').classList.add(casi ? 'casi' : 'ko');
@@ -1068,9 +1107,9 @@ function responder(entrada) {
   if (r.aviso) html += `<span class="aviso">${r.aviso}</span>`;
 
   // Marcas visuales según tipo
-  if (q.huecos) {
+  if (q.valores) {
     const dadas = new Set(r.aciertos || []);
-    $('#j-huecos').innerHTML = q.huecos.map(v => `<span class="hueco ${dadas.has(v) ? 'ok' : 'falta'}">${fmtVal(v)}</span>`).join('');
+    $('#j-huecos').innerHTML = q.valores.map(v => `<span class="hueco ${dadas.has(v) ? 'ok' : 'falta'}">${fmtVal(v)}</span>`).join('');
   }
   if (q.tipo === 'opciones') {
     document.querySelectorAll('.opcion').forEach(b => {
@@ -1081,8 +1120,9 @@ function responder(entrada) {
   if (q.tipo === 'tabla') {
     document.querySelectorAll('.celda').forEach(c => {
       const p = +c.dataset.p, g = +c.dataset.g;
-      if (p === el.p && (g === el.g || g === el.g2)) { c.classList.add('correcta'); c.textContent = el.s; }
-      else if (r.celda && p === r.celda.p && g === r.celda.g && !perfecto) c.classList.add('elegida-mal');
+      if (p === el.p && g === el.g) { c.classList.add('correcta'); c.textContent = el.s; }
+      else if (r.celda && p === r.celda.p && g === r.celda.g && !perfecto)
+        c.classList.add(r.dist === 1 ? 'cerca1' : r.dist === 2 ? 'cerca2' : 'elegida-mal');
     });
   }
 
@@ -1110,14 +1150,6 @@ document.addEventListener('keydown', ev => {
   }
 });
 $('#j-carta').addEventListener('click', continuar);
-$('#btn-manos').onclick = () => {
-  if (!Voz.disponible()) return toast('El micrófono no está disponible aquí');
-  Voz.manos = !Voz.manos;
-  if (E.partida) almacen.set('qq_manos_' + E.partida.tem.id, Voz.manos ? '1' : '0');
-  toast(Voz.manos ? '🎙️ Manos libres activado' : 'Manos libres desactivado');
-  if (Voz.manos) { Voz.reintentos = 0; Voz.escuchar(); } else Voz.parar();
-  pintarMic();
-};
 
 /* =========================================================
    FIN DE PARTIDA
@@ -1136,6 +1168,9 @@ function terminar() {
   } else if (P.modo === 'crono') {
     titulo = '¡Tiempo!';
     estrellas = P.aciertos >= 15 ? 3 : P.aciertos >= 10 ? 2 : P.aciertos >= 5 ? 1 : 0;
+  } else if (P.modo === 'revancha') {
+    titulo = `⚔️ Revancha: ${P.aciertos} de ${P.total} recuperados`;
+    estrellas = P.aciertos === P.total ? 3 : P.aciertos >= P.total * .6 ? 2 : P.aciertos > 0 ? 1 : 0;
   } else {
     const gana = P.jefeVida <= 0;
     if (gana) bonus = 30;
@@ -1165,7 +1200,17 @@ function terminar() {
   } else sub.hidden = true;
   $('#f-fallos').innerHTML = P.fallados.size ? `<div class="repaso"><h4>Para repasar</h4><div class="repaso-lista">${
     [...P.fallados.values()].map(s => `<span>${esc(s)}</span>`).join('')}</div></div>` : '';
-  $('#f-otra').onclick = () => empezar(P.modo);
+  // Revancha: solo tras una partida normal con fallos
+  E.revancha = (P.modo !== 'revancha' && P.fallados.size)
+    ? { tem: P.tem, opts: P.opts, els: [...P.fallados.keys()].map(s => ELEMENTOS.find(e => e.s === s)).filter(Boolean) } : null;
+  const rv = $('#f-revancha');
+  if (E.revancha) {
+    rv.hidden = false;
+    rv.innerHTML = `<b>⚔️ ¿Quieres la revancha?</b><span>Vuelve a intentar los ${E.revancha.els.length} que has fallado. Los puntos también cuentan.</span>
+      <div class="fila-btn"><button class="btn" onclick="empezar('revancha')">⚔️ ¡Revancha!</button>
+      <button class="btn sec" onclick="this.closest('#f-revancha').hidden=true">No, gracias</button></div>`;
+  } else rv.hidden = true;
+  $('#f-otra').onclick = () => empezar(P.modo === 'revancha' ? 'mision' : P.modo);
   mostrar('p-fin');
   Sonido.fin();
 
