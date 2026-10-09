@@ -223,27 +223,14 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
     </div>
   </section>
 
-  <!-- SESIÓN (sin pase o caducado) -->
+  <!-- SESIÓN (sin pase, caducado o fuera de la lista) -->
   <section id="p-sesion" class="pantalla">
     <div class="panel centro">
-      <div class="emoji-xl">🔑</div>
-      <h2>Entra desde Classroom</h2>
-      <p class="sutil" id="sesion-txt">Para guardar tus puntos, abre el juego desde el enlace de Classroom.</p>
-      <a class="btn" id="sesion-link" href="#" style="text-decoration:none;display:inline-block">Ir a la entrada</a>
+      <div class="emoji-xl" id="sesion-ico">🔑</div>
+      <h2 id="sesion-tit">Conectando con tu cuenta del cole…</h2>
+      <p class="sutil" id="sesion-txt"></p>
+      <a class="btn" id="sesion-link" href="#" style="text-decoration:none;display:inline-block">Entrar</a>
     </div>
-  </section>
-
-  <!-- REGISTRO (solo si no está en la pestaña Alumnado) -->
-  <section id="p-registro" class="pantalla">
-    <form class="panel centro" id="form-registro">
-      <div class="emoji-xl">🧪</div>
-      <h2>Nueva ficha de jugador</h2>
-      <p class="sutil">Solo la primera vez · <b id="reg-mail"></b></p>
-      <label>Curso<select id="reg-curso" required></select></label>
-      <label>Nombre<input id="reg-nombre" required maxlength="40" autocomplete="off"></label>
-      <label>Apellidos<input id="reg-apellidos" required maxlength="60" autocomplete="off"></label>
-      <button class="btn grande-btn" type="submit" id="reg-btn">¡A jugar!</button>
-    </form>
   </section>
 
   <!-- MENÚ / MAPA -->
@@ -261,7 +248,7 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
         <b id="m-tema-pts"></b>
         <small id="m-tema-rec"></small>
       </div>
-      <button class="btn-icono" id="btn-sonido" title="Sonido"></button>
+      <button class="btn-icono btn-sonido" id="btn-sonido" title="Sonido"></button>
     </header>
 
     <h1 class="titulo-juego">Química <span>Quest</span></h1>
@@ -293,6 +280,7 @@ input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33
       </div>
       <div class="combo" id="j-combo"></div>
       <div class="puntos"><span id="j-puntos">0</span><small>pts</small></div>
+      <button class="btn-icono btn-sonido" id="btn-sonido-j" title="Sonido"></button>
       <button class="btn-icono" id="btn-manos" title="Manos libres: el micro se enciende solo en cada pregunta">🎙️</button>
     </div>
 
@@ -757,51 +745,53 @@ function api(accion, datos) {
   })
     .then(r => r.json())
     .then(r => {
-      if (r.error === 'SESION') { pedirSesion(true); throw new Error('Sesión caducada'); }
+      if (r.error === 'SESION') { pedirSesion(); throw new Error('Sesión caducada'); }
+      if (r.error === 'NO_LISTA') { fueraDeLista(E.usuario); throw new Error('Fuera de la lista'); }
       if (r.error) throw new Error(r.error);
       return r.datos;
     });
 }
 
-function pedirSesion(caducada) {
+/* Sin pase o con el pase caducado: se va sola a la página de entrada del cole,
+   que identifica la cuenta del Chromebook y vuelve aquí con un pase nuevo. */
+let pasesRecien = false;
+function pedirSesion() {
   almacen.set('qq_token', '');
-  $('#sesion-txt').textContent = caducada
-    ? 'Tu sesión ha caducado. Vuelve a entrar desde el enlace de Classroom.'
-    : 'Para guardar tus puntos, abre el juego desde el enlace de Classroom.';
+  $('#sesion-ico').textContent = '🔑';
+  $('#sesion-tit').textContent = 'Conectando con tu cuenta del cole…';
+  $('#sesion-txt').textContent = '';
   $('#sesion-link').href = CONFIG.URL_ENTRADA;
+  mostrar('p-sesion');
+  // Si acabamos de recibir un pase y aun así no vale, no entramos en bucle: se muestra el botón
+  if (!pasesRecien && !/PEGA_AQUI/.test(CONFIG.URL_ENTRADA)) setTimeout(() => location.href = CONFIG.URL_ENTRADA, 600);
+  else $('#sesion-txt').textContent = 'No se ha podido iniciar la sesión. Pulsa el botón para volver a intentarlo.';
+}
+
+function fueraDeLista(mail) {
+  almacen.set('qq_token', '');
+  $('#sesion-ico').textContent = '🚫';
+  $('#sesion-tit').textContent = 'No estás en la lista';
+  $('#sesion-txt').textContent = `La cuenta ${mail} no está apuntada en este juego. Avisa a tu profesor/a.`;
+  $('#sesion-link').hidden = true;
   mostrar('p-sesion');
 }
 
 function init() {
   // El pase llega en la dirección (#t=...) desde la página de entrada; se guarda y se borra de la barra
   const m = location.hash.match(/[#&]t=([\w.-]+)/);
-  if (m) { almacen.set('qq_token', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  if (m) { pasesRecien = true; almacen.set('qq_token', m[1]); history.replaceState(null, '', location.pathname + location.search); }
   E.token = almacen.get('qq_token', '');
-  if (!E.token) return pedirSesion(false);
   if (/PEGA_AQUI/.test(CONFIG.API_URL)) return errorFatal('Falta configurar API_URL en index.html');
+  if (!E.token) return pedirSesion();
 
   api('usuario').then(r => {
     Object.assign(CONFIG, r.config);
+    if (CONFIG.sonido === false) { Sonido.on = false; document.querySelectorAll('.btn-sonido').forEach(b => b.hidden = true); }
     E.usuario = r.mail; E.progreso = r.progreso; E.resumen = r.resumen;
-    if (r.alumno) { E.alumno = r.alumno; enviarPendientes(); irMenu(); }
-    else abrirRegistro();
+    if (!r.alumno) return fueraDeLista(r.mail);
+    E.alumno = r.alumno; enviarPendientes(); irMenu();
   }).catch(e => { if (!$('#p-sesion').classList.contains('activa')) errorFatal(e); });
 }
-
-function abrirRegistro() {
-  $('#reg-mail').textContent = E.usuario;
-  $('#reg-curso').innerHTML = '<option value="">Elige tu curso…</option>' + CONFIG.cursos.map(c => `<option>${esc(c)}</option>`).join('');
-  mostrar('p-registro');
-}
-$('#form-registro').addEventListener('submit', ev => {
-  ev.preventDefault();
-  const d = { curso: $('#reg-curso').value, nombre: $('#reg-nombre').value.trim(), apellidos: $('#reg-apellidos').value.trim() };
-  if (!d.curso || !d.nombre || !d.apellidos) return toast('Rellena los tres campos');
-  $('#reg-btn').disabled = true;
-  api('registrar', d)
-    .then(al => { E.alumno = al; irMenu(); })
-    .catch(e => { $('#reg-btn').disabled = false; toast('No se pudo guardar: ' + e.message); });
-});
 
 /* =========================================================
    MENÚ
@@ -833,8 +823,16 @@ function irMenu() {
   mostrar('p-menu');
 }
 
-function pintarSonido() { $('#btn-sonido').textContent = Sonido.on ? '🔊' : '🔇'; }
-$('#btn-sonido').onclick = () => { Sonido.on = !Sonido.on; almacen.set('qq_sonido', Sonido.on ? '1' : '0'); pintarSonido(); Sonido.ok(); };
+function pintarSonido() {
+  document.querySelectorAll('.btn-sonido').forEach(b => {
+    b.textContent = Sonido.on ? '🔊' : '🔇';
+    b.title = Sonido.on ? 'Sonido activado (pulsa para silenciar)' : 'Sonido silenciado (pulsa para activar)';
+  });
+}
+document.querySelectorAll('.btn-sonido').forEach(b => b.onclick = () => {
+  Sonido.on = !Sonido.on; almacen.set('qq_sonido', Sonido.on ? '1' : '0'); pintarSonido(); Sonido.ok();
+  toast(Sonido.on ? '🔊 Sonido activado' : '🔇 Sonido silenciado');
+});
 
 function debiles(tem) {
   return tem.pool()
@@ -877,6 +875,7 @@ function empezar(modo) {
     actual: null, el: null, respondida: false, tSig: null, timer: null
   };
   $('#j-jefe').hidden = modo !== 'jefe';
+  pintarSonido();
   // Micro automático: activado por defecto solo en Elementos y símbolos (se puede cambiar con 🎙️)
   Voz.manos = Voz.disponible() && tem.voz &&
     almacen.get('qq_manos_' + tem.id, tem.id === 'elementos' ? '1' : '0') === '1';
