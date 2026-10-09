@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+:root{
+  --bg:#0a0f1f; --panel:#161f3d; --panel2:#1e2a52; --borde:#2e3c70;
+  --txt:#eef2ff; --sutil:#9aa6d1;
+  --cian:#22d3ee; --amarillo:#facc15; --rosa:#f472b6; --verde:#4ade80; --rojo:#f87171; --violeta:#a78bfa;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;color:var(--txt);background:var(--bg);font-family:'Nunito',system-ui,sans-serif;font-weight:700}
+body{overflow-x:hidden}
+#fondo{position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(circle at 15% 10%,#1d2b63 0,transparent 42%),
+             radial-gradient(circle at 90% 85%,#3d1a5e 0,transparent 45%),var(--bg)}
+#fondo::after{content:'';position:absolute;inset:0;background-image:radial-gradient(#ffffff1c 1px,transparent 1px);background-size:26px 26px}
+h1,h2,.titulo-juego,.grande,.puntos,.btn,.combo,.hud-tema b{font-family:'Lilita One',sans-serif;font-weight:400;letter-spacing:.5px}
+h2{margin:.3em 0}
+button{font:inherit;color:inherit;cursor:pointer}
+.sutil{color:var(--sutil)}
+.emoji-xl{font-size:56px;line-height:1}
+
+.pantalla{display:none;min-height:100vh;padding:20px 16px 40px;max-width:1000px;margin:0 auto;flex-direction:column;align-items:center}
+.pantalla.activa{display:flex;animation:entrar .35s ease}
+@keyframes entrar{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:2px solid var(--borde);border-radius:26px;padding:28px;box-shadow:0 12px 40px #0009;width:100%;max-width:440px}
+.panel.ancho{max-width:740px}
+.centro{text-align:center;margin:auto}
+
+/* Botones */
+.btn{background:linear-gradient(180deg,#38e1ff,#0ea5c6);color:#05202a;border:0;border-radius:16px;padding:12px 26px;font-size:20px;box-shadow:0 5px 0 #08708a;transition:transform .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #08708a}
+.btn.sec{background:linear-gradient(180deg,#3a4780,#2a3566);color:var(--txt);box-shadow:0 5px 0 #1a2147}
+.btn:disabled{opacity:.5;cursor:default}
+.grande-btn{width:100%;margin-top:14px;font-size:24px}
+.btn-icono{background:#ffffff12;border:2px solid var(--borde);border-radius:14px;width:44px;height:44px;font-size:20px;flex:none}
+.btn-icono.on{background:var(--rosa);border-color:var(--rosa);box-shadow:0 0 18px var(--rosa)}
+.volver{background:none;border:0;color:var(--sutil);font-weight:900;padding:0;margin-bottom:8px}
+.fila-btn{display:flex;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+
+/* Formularios */
+label{display:block;text-align:left;margin-top:14px;color:var(--sutil);font-size:14px}
+input,select{display:block;width:100%;margin-top:6px;padding:12px 14px;border-radius:14px;border:2px solid var(--borde);background:#0b1230;color:var(--txt);font:inherit;font-size:18px;outline:none}
+input:focus,select:focus{border-color:var(--cian);box-shadow:0 0 0 4px #22d3ee33}
+
+/* Carga */
+.atomo{position:relative;width:110px;height:110px;margin:28vh auto 20px}
+.atomo i{position:absolute;inset:0;border:3px solid var(--cian);border-radius:50%;transform:rotate(var(--r)) scaleY(.38);animation:gira 1.6s linear infinite}
+.atomo i:nth-child(1){--r:0deg}.atomo i:nth-child(2){--r:60deg;border-color:var(--rosa)}.atomo i:nth-child(3){--r:120deg;border-color:var(--amarillo)}
+.atomo b{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px;border-radius:50%;background:#fff;box-shadow:0 0 20px #fff}
+@keyframes gira{to{transform:rotate(calc(var(--r) + 360deg)) scaleY(.38)}}
+.carga-txt{color:var(--sutil);text-align:center}
+
+/* HUD jugador */
+.hud-jugador{display:flex;align-items:center;gap:14px;width:100%;background:#ffffff0d;border:2px solid var(--borde);border-radius:22px;padding:12px 14px}
+.avatar{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-family:'Lilita One';font-size:24px;background:linear-gradient(135deg,var(--violeta),var(--rosa));flex:none}
+.hud-info{flex:1;min-width:0}
+.hud-nombre{font-size:18px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud-rango{font-size:13px;color:var(--amarillo)}
+.barra-xp{height:10px;border-radius:9px;background:#0b1230;margin-top:6px;overflow:hidden}
+.barra-xp i{display:block;height:100%;background:linear-gradient(90deg,var(--amarillo),#fb923c);border-radius:9px;transition:width .8s}
+.hud-xp{font-size:12px;color:var(--sutil);margin-top:3px}
+.hud-tema{text-align:center;padding:0 10px;border-left:2px solid var(--borde)}
+.hud-tema .etq{display:block;font-size:11px;color:var(--sutil);text-transform:uppercase}
+.hud-tema b{font-size:26px;color:var(--cian);display:block}
+.hud-tema small{font-size:11px;color:var(--sutil)}
+
+.titulo-juego{font-size:54px;margin:26px 0 0;text-shadow:0 4px 0 #0008}
+.titulo-juego span{color:var(--cian);text-shadow:0 0 24px #22d3ee88}
+.subtitulo{color:var(--sutil);margin:4px 0 22px}
+
+/* Mapa de temáticas */
+.mapa{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;width:100%}
+.mision{--c:var(--cian);position:relative;text-align:left;background:linear-gradient(180deg,var(--panel2),var(--panel));border:2px solid var(--borde);border-radius:24px;padding:20px;transition:transform .15s,border-color .15s,box-shadow .15s}
+.mision:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 10px 30px color-mix(in srgb,var(--c) 30%,transparent)}
+.mision .ico{font-size:40px}
+.mision h3{font-family:'Lilita One';font-weight:400;font-size:22px;margin:8px 0 2px;color:var(--c)}
+.mision p{margin:0;color:var(--sutil);font-size:14px}
+.dominio{margin-top:14px;font-size:12px;color:var(--sutil)}
+.dominio .barra{height:8px;background:#0b1230;border-radius:8px;margin-top:5px;overflow:hidden}
+.dominio .barra i{display:block;height:100%;background:var(--c)}
+.c-cian{--c:var(--cian)}.c-amarillo{--c:var(--amarillo)}.c-rosa{--c:var(--rosa)}.c-verde{--c:var(--verde)}
+
+/* Modos */
+.modos-cab{display:flex;gap:16px;align-items:center}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+.chip{background:#0b1230;border:2px solid var(--borde);border-radius:30px;padding:8px 14px;font-size:14px}
+.chip.on{border-color:var(--cian);background:#22d3ee22;color:var(--cian)}
+.modos{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:16px}
+.modo{text-align:left;background:#0b1230;border:2px solid var(--borde);border-radius:20px;padding:18px;transition:transform .12s,border-color .12s}
+.modo:hover:not(:disabled){transform:translateY(-3px);border-color:var(--amarillo)}
+.modo .ico{font-size:34px}
+.modo b{display:block;font-family:'Lilita One';font-weight:400;font-size:21px;margin:6px 0 2px}
+.modo span{color:var(--sutil);font-size:13px}
+.modo:disabled{opacity:.55;cursor:not-allowed}
+
+/* HUD juego */
+.hud-juego{display:flex;align-items:center;gap:12px;width:100%;max-width:760px}
+.vidas{font-size:22px;letter-spacing:2px;min-width:80px}
+.vidas .perdida{filter:grayscale(1);opacity:.3}
+.progreso{flex:1;display:flex;align-items:center;gap:8px}
+.progreso-barra{flex:1;height:14px;background:#0b1230;border:2px solid var(--borde);border-radius:10px;overflow:hidden}
+.progreso-barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--verde),var(--cian));transition:width .3s}
+.progreso-barra i.peligro{background:linear-gradient(90deg,var(--rojo),#fb923c)}
+.progreso span{font-size:13px;color:var(--sutil);min-width:46px;text-align:right}
+.combo{font-size:20px;color:var(--amarillo);min-width:44px;text-align:center;text-shadow:0 0 14px #facc1588}
+.combo.pop{animation:pop .35s}
+.puntos{font-size:30px;color:var(--cian);min-width:80px;text-align:right}
+.puntos small{font-size:14px;color:var(--sutil);margin-left:4px}
+
+.jefe{display:flex;gap:12px;align-items:center;width:100%;max-width:760px;margin-top:14px;background:#3b0d2a99;border:2px solid var(--rosa);border-radius:18px;padding:10px 14px}
+.jefe-cara{font-size:40px;animation:flota 2s ease-in-out infinite}
+.jefe.golpe .jefe-cara{animation:temblor .35s}
+.jefe-info{flex:1}
+.jefe-vida{height:14px;background:#0b1230;border-radius:9px;overflow:hidden;margin-top:6px}
+.jefe-vida i{display:block;height:100%;background:linear-gradient(90deg,var(--rosa),var(--rojo));transition:width .4s}
+@keyframes flota{50%{transform:translateY(-6px)}}
+
+/* Carta de pregunta */
+.carta{position:relative;width:100%;max-width:760px;margin-top:20px;text-align:center;background:linear-gradient(180deg,var(--panel2),var(--panel));border:3px solid var(--borde);border-radius:30px;padding:26px 20px 22px;transition:border-color .2s,box-shadow .2s}
+.carta.ok{border-color:var(--verde);box-shadow:0 0 40px #4ade8055}
+.carta.ko{border-color:var(--rojo);box-shadow:0 0 40px #f8717155;animation:temblor .4s}
+.carta.casi{border-color:var(--amarillo);box-shadow:0 0 40px #facc1544}
+.enunciado{margin:0;color:var(--sutil);font-size:17px}
+.grande{font-size:110px;line-height:1.1;margin:8px 0 0;text-shadow:0 6px 0 #0007}
+.grande.largo{font-size:64px;padding:18px 0 10px}
+.pequeno{margin:0;color:var(--sutil);font-size:18px;min-height:1.2em}
+.huecos{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.hueco{min-width:56px;padding:8px 10px;border-radius:12px;border:2px dashed var(--borde);font-family:'Lilita One';font-size:22px;color:var(--sutil)}
+.hueco.ok{border:2px solid var(--verde);color:var(--verde);background:#4ade8018}
+.hueco.falta{border:2px solid var(--rojo);color:var(--rojo)}
+.feedback{min-height:30px;margin-top:12px;font-size:20px}
+.feedback .pts{font-family:'Lilita One';color:var(--verde);font-size:26px;animation:subir .8s}
+.feedback .sol{color:var(--txt)}
+.feedback .aviso{display:block;font-size:15px;color:var(--amarillo);margin-top:4px}
+.feedback .seguir{display:block;font-size:13px;color:var(--sutil);margin-top:6px}
+@keyframes temblor{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@keyframes pop{50%{transform:scale(1.5)}}
+@keyframes subir{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* Zona de respuesta */
+.respuesta{width:100%;max-width:760px;margin-top:18px}
+.fila-texto{display:flex;gap:10px}
+.fila-texto input{margin:0;font-size:26px;text-align:center;padding:14px}
+.mic{width:66px;flex:none;border-radius:18px;border:2px solid var(--borde);background:#ffffff12;font-size:28px;position:relative}
+.mic.escuchando{background:var(--rosa);border-color:var(--rosa);animation:latido 1s infinite}
+@keyframes latido{0%{box-shadow:0 0 0 0 #f472b6aa}100%{box-shadow:0 0 0 18px #f472b600}}
+.lanzar{flex:none}
+.ayuda{text-align:center;color:var(--sutil);font-size:13px;margin-top:10px}
+.opciones{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.opcion{border:0;border-radius:20px;padding:20px 10px;font-family:'Lilita One';font-size:24px;color:#0a0f1f;box-shadow:0 6px 0 #0006;transition:transform .08s}
+.opcion:active{transform:translateY(4px);box-shadow:0 2px 0 #0006}
+.opcion small{display:block;font-family:'Nunito';font-size:12px;opacity:.7}
+.opcion[data-id=metal]{background:linear-gradient(180deg,#cbd5e1,#94a3b8)}
+.opcion[data-id=nometal]{background:linear-gradient(180deg,#86efac,#22c55e)}
+.opcion[data-id=noble]{background:linear-gradient(180deg,#d8b4fe,#a855f7)}
+.opcion.correcta{outline:4px solid var(--verde);outline-offset:3px}
+.opcion.elegida-mal{outline:4px solid var(--rojo);outline-offset:3px;opacity:.7}
+.oido{min-height:22px;color:var(--rosa);text-align:center;margin:10px 0 0}
+.aviso-voz{max-width:760px;margin-top:10px;background:#facc1522;border:2px solid var(--amarillo);border-radius:14px;padding:10px 14px;font-size:14px}
+
+/* Tabla periódica (¿Dónde está?) */
+.tabla{display:grid;grid-template-columns:22px repeat(18,1fr);gap:3px;width:100%}
+.tabla .cab{font-size:11px;color:var(--sutil);text-align:center;align-self:end}
+.tabla .per{font-size:12px;color:var(--sutil);display:grid;place-items:center}
+.celda{aspect-ratio:1;border-radius:6px;border:1px solid var(--borde);background:#0b1230;padding:0;font-family:'Lilita One';font-size:clamp(9px,1.6vw,15px);transition:background .1s}
+.celda:hover{background:#22d3ee33;border-color:var(--cian)}
+.celda.correcta{background:var(--verde);color:#062;border-color:var(--verde)}
+.celda.elegida-mal{background:var(--rojo);color:#400;border-color:var(--rojo)}
+.hueco-t{aspect-ratio:1}
+
+/* Fin */
+.estrellas{font-size:56px;letter-spacing:6px}
+.estrellas .apagada{filter:grayscale(1);opacity:.25}
+.estrellas span{display:inline-block;animation:pop .5s backwards}
+.f-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.f-stats div{background:#0b1230;border-radius:16px;padding:12px}
+.f-stats b{display:block;font-family:'Lilita One';font-weight:400;font-size:32px;color:var(--cian)}
+.f-stats span{font-size:12px;color:var(--sutil)}
+.f-subida{background:linear-gradient(90deg,#facc1533,#fb923c33);border:2px solid var(--amarillo);border-radius:16px;padding:12px;margin-bottom:14px;font-size:18px;animation:pop .6s}
+.repaso{text-align:left;margin-top:6px}
+.repaso h4{margin:6px 0;color:var(--sutil);font-size:14px}
+.repaso-lista{display:flex;flex-wrap:wrap;gap:8px}
+.repaso-lista span{background:#f8717122;border:1px solid #f8717166;border-radius:10px;padding:5px 10px;font-size:14px}
+.guardado{color:var(--sutil);font-size:14px;margin:14px 0 0}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120px);background:#0b1230;border:2px solid var(--cian);border-radius:14px;padding:10px 18px;transition:transform .3s;z-index:9}
+.toast.ver{transform:translateX(-50%) translateY(0)}
+
+@media (max-width:640px){
+  .hud-tema{display:none}
+  .titulo-juego{font-size:40px}
+  .grande{font-size:80px}.grande.largo{font-size:44px}
+  .opciones{grid-template-columns:1fr}
+  .hud-juego{flex-wrap:wrap}
+}
+</style>
+
+</head>
+<body>
+  <div id="fondo" aria-hidden="true"></div>
+
+  <!-- CARGA -->
+  <section id="p-carga" class="pantalla activa">
+    <div class="atomo"><i></i><i></i><i></i><b></b></div>
+    <p class="carga-txt">Encendiendo el laboratorio…</p>
+  </section>
+
+  <!-- ERROR -->
+  <section id="p-error" class="pantalla">
+    <div class="panel centro">
+      <div class="emoji-xl">💥</div>
+      <h2>¡Reacción inesperada!</h2>
+      <p id="error-txt" class="sutil"></p>
+      <button class="btn" onclick="location.reload()">Reintentar</button>
+    </div>
+  </section>
+
+  <!-- SESIÓN (sin pase o caducado) -->
+  <section id="p-sesion" class="pantalla">
+    <div class="panel centro">
+      <div class="emoji-xl">🔑</div>
+      <h2>Entra desde Classroom</h2>
+      <p class="sutil" id="sesion-txt">Para guardar tus puntos, abre el juego desde el enlace de Classroom.</p>
+      <a class="btn" id="sesion-link" href="#" style="text-decoration:none;display:inline-block">Ir a la entrada</a>
+    </div>
+  </section>
+
+  <!-- REGISTRO (solo si no está en la pestaña Alumnado) -->
+  <section id="p-registro" class="pantalla">
+    <form class="panel centro" id="form-registro">
+      <div class="emoji-xl">🧪</div>
+      <h2>Nueva ficha de jugador</h2>
+      <p class="sutil">Solo la primera vez · <b id="reg-mail"></b></p>
+      <label>Curso<select id="reg-curso" required></select></label>
+      <label>Nombre<input id="reg-nombre" required maxlength="40" autocomplete="off"></label>
+      <label>Apellidos<input id="reg-apellidos" required maxlength="60" autocomplete="off"></label>
+      <button class="btn grande-btn" type="submit" id="reg-btn">¡A jugar!</button>
+    </form>
+  </section>
+
+  <!-- MENÚ / MAPA -->
+  <section id="p-menu" class="pantalla">
+    <header class="hud-jugador">
+      <div class="avatar" id="m-avatar"></div>
+      <div class="hud-info">
+        <div class="hud-nombre" id="m-nombre"></div>
+        <div class="hud-rango"><span id="m-rango"></span> · Nivel <b id="m-nivel"></b></div>
+        <div class="barra-xp"><i id="m-xp-barra"></i></div>
+        <div class="hud-xp" id="m-xp-txt"></div>
+      </div>
+      <div class="hud-tema">
+        <span class="etq" id="m-tema-etq"></span>
+        <b id="m-tema-pts"></b>
+        <small id="m-tema-rec"></small>
+      </div>
+      <button class="btn-icono" id="btn-sonido" title="Sonido"></button>
+    </header>
+
+    <h1 class="titulo-juego">Química <span>Quest</span></h1>
+    <p class="subtitulo">Elige tu misión</p>
+    <div class="mapa" id="m-tematicas"></div>
+  </section>
+
+  <!-- ELEGIR MODO -->
+  <section id="p-modos" class="pantalla">
+    <div class="panel ancho">
+      <button class="volver" onclick="irMenu()">← Mapa</button>
+      <div class="modos-cab">
+        <span class="emoji-xl" id="mo-icono"></span>
+        <div><h2 id="mo-titulo"></h2><p class="sutil" id="mo-lema"></p></div>
+      </div>
+      <div id="mo-dir" class="chips"></div>
+      <div class="modos" id="mo-lista"></div>
+    </div>
+  </section>
+
+  <!-- JUEGO -->
+  <section id="p-juego" class="pantalla">
+    <div class="hud-juego">
+      <button class="btn-icono" onclick="abandonar()" title="Salir">✕</button>
+      <div class="vidas" id="j-vidas"></div>
+      <div class="progreso">
+        <div class="progreso-barra"><i id="j-prog"></i></div>
+        <span id="j-prog-txt"></span>
+      </div>
+      <div class="combo" id="j-combo"></div>
+      <div class="puntos"><span id="j-puntos">0</span><small>pts</small></div>
+      <button class="btn-icono" id="btn-manos" title="Manos libres: el micro se enciende solo en cada pregunta">🎙️</button>
+    </div>
+
+    <div class="jefe" id="j-jefe" hidden>
+      <div class="jefe-cara">👾</div>
+      <div class="jefe-info">
+        <b>El Rebelde Periódico</b>
+        <div class="jefe-vida"><i id="j-jefe-vida"></i></div>
+      </div>
+    </div>
+
+    <div class="carta" id="j-carta">
+      <p class="enunciado" id="j-enunciado"></p>
+      <div class="grande" id="j-grande"></div>
+      <p class="pequeno" id="j-pequeno"></p>
+      <div class="huecos" id="j-huecos"></div>
+      <div class="feedback" id="j-feedback"></div>
+    </div>
+
+    <div id="j-respuesta" class="respuesta"></div>
+    <p class="oido" id="j-oido"></p>
+    <div class="aviso-voz" id="j-aviso-voz" hidden></div>
+  </section>
+
+  <!-- FIN DE PARTIDA -->
+  <section id="p-fin" class="pantalla">
+    <div class="panel centro ancho">
+      <div class="estrellas" id="f-estrellas"></div>
+      <h2 id="f-titulo"></h2>
+      <div class="f-stats">
+        <div><b id="f-puntos"></b><span>puntos</span></div>
+        <div><b id="f-aciertos"></b><span>aciertos</span></div>
+        <div><b id="f-racha"></b><span>mejor racha</span></div>
+      </div>
+      <div class="f-subida" id="f-subida" hidden></div>
+      <div id="f-fallos"></div>
+      <p class="guardado" id="f-guardado"></p>
+      <div class="fila-btn">
+        <button class="btn" id="f-otra">↻ Otra vez</button>
+        <button class="btn sec" onclick="irMenu()">Mapa</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+/* ======= CONFIGURA AQUÍ LAS DOS DIRECCIONES DE APPS SCRIPT ======= */
+const CONFIG = {
+  API_URL: 'PEGA_AQUI_LA_URL_DE_LA_IMPLEMENTACION_API',          // termina en /exec
+  URL_ENTRADA: 'PEGA_AQUI_LA_URL_DE_LA_IMPLEMENTACION_ENTRADA',  // la que compartes en Classroom
+  // El resto llega del servidor (tema, cursos…)
+  tema: 'T1', cursos: [], mayusculasEstrictas: false
+};
+</script>
+  <script>
+/* Datos sacados de tus tablas de Elementos y Valencias.
+   s = símbolo · n = nombre · a = otros nombres válidos · p = periodo · g = columna (1-18)
+   g2 = columna alternativa (el H aparece también encima del F) · t = metal | nometal | noble
+   v = valencias. Para añadir o corregir algo, edita aquí. */
+const ELEMENTOS = [
+  {z:1,  s:'H',  n:'Hidrógeno', p:1, g:1,  g2:17, t:'nometal', v:[-1,1]},
+  {z:2,  s:'He', n:'Helio',     p:1, g:18, t:'noble',   v:[]},
+  {z:3,  s:'Li', n:'Litio',     p:2, g:1,  t:'metal',   v:[1]},
+  {z:4,  s:'Be', n:'Berilio',   p:2, g:2,  t:'metal',   v:[2]},
+  {z:5,  s:'B',  n:'Boro',      p:2, g:13, t:'nometal', v:[-3,3]},
+  {z:6,  s:'C',  n:'Carbono',   p:2, g:14, t:'nometal', v:[-4,2,4]},
+  {z:7,  s:'N',  n:'Nitrógeno', p:2, g:15, t:'nometal', v:[-3,1,2,3,4,5]},
+  {z:8,  s:'O',  n:'Oxígeno',   p:2, g:16, t:'nometal', v:[-2]},
+  {z:9,  s:'F',  n:'Flúor',     p:2, g:17, t:'nometal', v:[-1]},
+  {z:10, s:'Ne', n:'Neón',      p:2, g:18, t:'noble',   v:[]},
+  {z:11, s:'Na', n:'Sodio',     p:3, g:1,  t:'metal',   v:[1]},
+  {z:12, s:'Mg', n:'Magnesio',  p:3, g:2,  t:'metal',   v:[2]},
+  {z:13, s:'Al', n:'Aluminio',  p:3, g:13, t:'metal',   v:[3]},
+  {z:14, s:'Si', n:'Silicio',   p:3, g:14, t:'nometal', v:[-4,4]},
+  {z:15, s:'P',  n:'Fósforo',   p:3, g:15, t:'nometal', v:[-3,1,3,5]},
+  {z:16, s:'S',  n:'Azufre',    p:3, g:16, t:'nometal', v:[-2,2,4,6]},
+  {z:17, s:'Cl', n:'Cloro',     p:3, g:17, t:'nometal', v:[-1,1,3,5,7]},
+  {z:18, s:'Ar', n:'Argón',     p:3, g:18, t:'noble',   v:[]},
+  {z:19, s:'K',  n:'Potasio',   p:4, g:1,  t:'metal',   v:[1]},
+  {z:20, s:'Ca', n:'Calcio',    p:4, g:2,  t:'metal',   v:[2]},
+  {z:24, s:'Cr', n:'Cromo',     p:4, g:6,  t:'metal',   v:[2,3,6]},
+  {z:25, s:'Mn', n:'Manganeso', p:4, g:7,  t:'metal',   v:[2,3,4,6,7]},
+  {z:26, s:'Fe', n:'Hierro',    p:4, g:8,  t:'metal',   v:[2,3]},
+  {z:27, s:'Co', n:'Cobalto',   p:4, g:9,  t:'metal',   v:[2,3]},
+  {z:28, s:'Ni', n:'Níquel',    p:4, g:10, t:'metal',   v:[2,3]},
+  {z:29, s:'Cu', n:'Cobre',     p:4, g:11, t:'metal',   v:[1,2]},
+  {z:30, s:'Zn', n:'Cinc', a:['Zinc'], p:4, g:12, t:'metal', v:[2]},
+  {z:33, s:'As', n:'Arsénico',  p:4, g:15, t:'nometal', v:[-3,3,5]},
+  {z:34, s:'Se', n:'Selenio',   p:4, g:16, t:'nometal', v:[-2,2,4,6]},
+  {z:35, s:'Br', n:'Bromo',     p:4, g:17, t:'nometal', v:[-1,1,3,5,7]},
+  {z:36, s:'Kr', n:'Kriptón', a:['Criptón'], p:4, g:18, t:'noble', v:[]},
+  {z:37, s:'Rb', n:'Rubidio',   p:5, g:1,  t:'metal',   v:[1]},
+  {z:38, s:'Sr', n:'Estroncio', p:5, g:2,  t:'metal',   v:[2]},
+  {z:46, s:'Pd', n:'Paladio',   p:5, g:10, t:'metal',   v:[2,4]},
+  {z:47, s:'Ag', n:'Plata',     p:5, g:11, t:'metal',   v:[1]},
+  {z:48, s:'Cd', n:'Cadmio',    p:5, g:12, t:'metal',   v:[2]},
+  {z:50, s:'Sn', n:'Estaño',    p:5, g:14, t:'metal',   v:[2,4]},
+  {z:51, s:'Sb', n:'Antimonio', p:5, g:15, t:'metal',   v:[-3,3,5]},
+  {z:52, s:'Te', n:'Teluro', a:['Telurio'], p:5, g:16, t:'nometal', v:[-2,2,4,6]},
+  {z:53, s:'I',  n:'Yodo', a:['Iodo'], p:5, g:17, t:'nometal', v:[-1,1,3,5,7]},
+  {z:54, s:'Xe', n:'Xenón',     p:5, g:18, t:'noble',   v:[]},
+  {z:55, s:'Cs', n:'Cesio',     p:6, g:1,  t:'metal',   v:[1]},
+  {z:56, s:'Ba', n:'Bario',     p:6, g:2,  t:'metal',   v:[2]},
+  {z:78, s:'Pt', n:'Platino',   p:6, g:10, t:'metal',   v:[2,4]},
+  {z:79, s:'Au', n:'Oro',       p:6, g:11, t:'metal',   v:[1,3]},
+  {z:80, s:'Hg', n:'Mercurio',  p:6, g:12, t:'metal',   v:[1,2]},
+  {z:82, s:'Pb', n:'Plomo',     p:6, g:14, t:'metal',   v:[2,4]},
+  {z:83, s:'Bi', n:'Bismuto',   p:6, g:15, t:'metal',   v:[3,5]},
+  {z:84, s:'Po', n:'Polonio',   p:6, g:16, t:'metal',   v:[2,4,6]},
+  {z:85, s:'At', n:'Ástato', a:['Astato'], p:6, g:17, t:'nometal', v:[-1,1,3,5,7]},
+  {z:86, s:'Rn', n:'Radón',     p:6, g:18, t:'noble',   v:[]},
+  {z:87, s:'Fr', n:'Francio',   p:7, g:1,  t:'metal',   v:[1]},
+  {z:88, s:'Ra', n:'Radio',     p:7, g:2,  t:'metal',   v:[2]}
+];
+
+const NOMBRE_TIPO = { metal: 'Metal', nometal: 'No metal', noble: 'Gas noble' };
+</script>
+
+  <script>
+'use strict';
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const quitarTildes = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const barajar = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmtVal = v => (v > 0 ? '+' : '') + v;
+const almacen = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  let prev = Array.from({length: b.length + 1}, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('ver');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('ver'), 2200);
+}
+function mostrar(id) {
+  document.querySelectorAll('.pantalla').forEach(p => p.classList.toggle('activa', p.id === id));
+  window.scrollTo(0, 0);
+}
+
+/* =========================================================
+   RECONOCIMIENTO DE RESPUESTAS (escritas o habladas)
+   ========================================================= */
+// Nombres de las letras en español → letra
+const LETRAS = Object.assign(
+  Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map(l => [l, l])),
+  { be:'b', ce:'c', se:'c', de:'d', efe:'f', ge:'g', hache:'h', ache:'h', jota:'j', ka:'k',
+    ele:'l', el:'l', eme:'m', ene:'n', pe:'p', cu:'q', erre:'r', ere:'r', ese:'s', es:'s',
+    te:'t', uve:'v', ve:'v', uvedoble:'w', equis:'x', igriega:'y', ye:'y', zeta:'z', ceta:'z', seta:'z' }
+);
+const LETRAS_LISTA = Object.entries(LETRAS);
+const RELLENO = new Set(['es','el','la','un','una','se','escribe','simbolo','su','de','mayuscula','minuscula','y','con','creo','que']);
+
+/** Todas las formas de leer un texto como deletreo de letras (máx. 3 letras). "seele" → "cl" */
+function deletreo(t) {
+  const memo = new Map();
+  const f = i => {
+    if (i === t.length) return [''];
+    if (memo.has(i)) return memo.get(i);
+    const res = new Set();
+    for (const [nom, letra] of LETRAS_LISTA) {
+      if (t.startsWith(nom, i)) for (const resto of f(i + nom.length)) if (resto.length < 3) res.add(letra + resto);
+    }
+    const arr = [...res]; memo.set(i, arr); return arr;
+  };
+  return f(0);
+}
+
+function candidatosSimbolo(txt) {
+  const limpio = quitarTildes(String(txt).toLowerCase()).replace(/[^a-z ]/g, ' ').trim();
+  if (!limpio) return new Set();
+  const palabras = limpio.split(/\s+/);
+  const trozos = [palabras.join(''), palabras.filter(w => !RELLENO.has(w)).join(''), ...palabras];
+  const out = new Set();
+  for (const t of trozos) {
+    if (!t || t.length > 14) continue;
+    if (t.length <= 2) out.add(t);
+    deletreo(t).forEach(c => out.add(c));
+  }
+  return out;
+}
+
+function normNombre(s) {
+  const w = quitarTildes(String(s).toLowerCase()).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
+  while (w.length > 1 && ['es','el','la','un','una','creo','que'].includes(w[0])) w.shift();
+  return w.join(' ');
+}
+
+function comprobarNombre(el, e) {
+  const validos = [el.n, ...(el.a || [])];
+  const nv = validos.map(normNombre);
+  for (const t of e.textos) {
+    const x = normNombre(t);
+    if (!x) continue;
+    if (nv.includes(x)) {
+      let aviso = '';
+      if (e.escrito) {
+        const tal = String(t).trim().toLowerCase().replace(/^(el|la)\s+/, '');
+        if (!validos.some(v => v.toLowerCase() === tal)) aviso = `Ojo con la tilde: se escribe <b>${esc(el.n)}</b>`;
+      }
+      return { parcial: 1, aviso };
+    }
+    if (!e.escrito) {
+      if (nv.some(v => v.length >= 5 && lev(v, x) <= 1)) return { parcial: 1 };
+      if (nv.some(v => (' ' + x + ' ').includes(' ' + v + ' '))) return { parcial: 1 };
+    }
+  }
+  return { parcial: 0 };
+}
+
+function comprobarSimbolo(el, e) {
+  if (e.escrito) {
+    const r = String(e.textos[0] || '').trim();
+    if (r === el.s) return { parcial: 1 };
+    if (r.toLowerCase() === el.s.toLowerCase()) {
+      return CONFIG.mayusculasEstrictas
+        ? { parcial: 0, aviso: `Las mayúsculas cuentan: es <b>${el.s}</b>` }
+        : { parcial: 1, aviso: `Recuerda: se escribe <b>${el.s}</b>` };
+    }
+    return { parcial: 0 };
+  }
+  const obj = el.s.toLowerCase();
+  for (const t of e.textos) if (candidatosSimbolo(t).has(obj)) return { parcial: 1 };
+  return { parcial: 0 };
+}
+
+const NUM = { cero:0, uno:1, una:1, un:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8 };
+/** "menos uno, más uno" · "-1 +1" · "+3+5+7" → [-1, 1] … */
+function parseValencias(txt) {
+  let s = quitarTildes(String(txt).toLowerCase()).replace(/[−–—]/g, '-');
+  s = s.replace(/\bmas\b/g, ' + ').replace(/\bmenos\b/g, ' - ');
+  s = s.replace(/\b(cero|uno|una|un|dos|tres|cuatro|cinco|seis|siete|ocho)\b/g, m => ' ' + NUM[m] + ' ');
+  const res = new Set(); const re = /([+-])?\s*(\d)/g; let m;
+  while ((m = re.exec(s))) res.add((m[1] === '-' ? -1 : 1) * Number(m[2]));
+  return [...res];
+}
+
+function comprobarValencias(el, e) {
+  const ok = new Set(el.v); let mejor = null;
+  for (const t of e.textos) {
+    const r = parseValencias(t);
+    if (!r.length) continue;
+    const aciertos = r.filter(x => ok.has(x));
+    const sobran = r.filter(x => !ok.has(x));
+    const parcial = Math.max(0, aciertos.length - sobran.length) / el.v.length;
+    if (!mejor || parcial > mejor.parcial) mejor = { parcial, aciertos, sobran };
+  }
+  if (!mejor) return { nada: true };
+  if (mejor.sobran.length) mejor.aviso = 'Sobraban: ' + mejor.sobran.map(fmtVal).join('  ');
+  return mejor;
+}
+
+function clasificarVoz(txt) {
+  const s = ' ' + normNombre(txt) + ' ';
+  if (/ no ?metal/.test(s)) return 'nometal';
+  if (/ (gas|noble)/.test(s)) return 'noble';
+  if (/ metal/.test(s)) return 'metal';
+  return null;
+}
+
+/* =========================================================
+   TEMÁTICAS  (para añadir una nueva, añade una entrada aquí)
+   ========================================================= */
+const etiquetaCol = g => g <= 2 ? 's' + g : g <= 12 ? 'd' + (g - 2) : 'p' + (g - 12);
+
+const TEMATICAS = {
+  elementos: {
+    nombre: 'Elementos y símbolos', corto: 'Elementos', icono: '⚗️', color: 'cian',
+    lema: 'Del símbolo al nombre y del nombre al símbolo', voz: true, direcciones: true,
+    pool: () => ELEMENTOS,
+    pregunta(el, opts) {
+      const dir = opts.dir === 'mixto' ? (Math.random() < .5 ? 'sn' : 'ns') : opts.dir;
+      if (dir === 'sn') return {
+        tipo: 'texto', grande: el.s, enunciado: '¿Qué elemento es?',
+        placeholder: 'Escribe o di el nombre', solucion: `${el.s} = ${el.n}`,
+        ayuda: 'Enter con la casilla vacía = hablar',
+        comprobar: e => comprobarNombre(el, e)
+      };
+      return {
+        tipo: 'texto', grande: el.n, largo: true, enunciado: '¿Cuál es su símbolo?',
+        placeholder: 'Escribe o deletrea', solucion: `${el.n} = ${el.s}`,
+        ayuda: 'Por voz, deletrea: «ce, ele» = Cl · Enter vacío = hablar',
+        comprobar: e => comprobarSimbolo(el, e)
+      };
+    }
+  },
+
+  valencias: {
+    nombre: 'Valencias', corto: 'Valencias', icono: '⚡', color: 'amarillo',
+    lema: 'Todas las valencias de cada elemento', voz: true,
+    pool: () => ELEMENTOS.filter(e => e.v.length),
+    pregunta(el) {
+      return {
+        tipo: 'texto', grande: el.s, pequeno: el.n, enunciado: '¿Cuáles son sus valencias?',
+        huecos: el.v, placeholder: 'Ej.: -1 +1', solucion: `${el.s}: ${el.v.map(fmtVal).join('  ')}`,
+        ayuda: 'Por voz: «menos uno, más uno» · El orden da igual',
+        comprobar: e => comprobarValencias(el, e)
+      };
+    }
+  },
+
+  metales: {
+    nombre: 'Metal o no metal', corto: 'Metales', icono: '🔩', color: 'rosa',
+    lema: 'Clasifica cada elemento a toda velocidad', voz: true,
+    pool: () => ELEMENTOS,
+    pregunta(el) {
+      return {
+        tipo: 'opciones', grande: el.s, pequeno: el.n, enunciado: '¿Qué es?',
+        opciones: [
+          { id: 'metal', txt: 'Metal', tecla: '1' },
+          { id: 'nometal', txt: 'No metal', tecla: '2' },
+          { id: 'noble', txt: 'Gas noble', tecla: '3' }
+        ],
+        correcta: el.t, solucion: `${el.s} → ${NOMBRE_TIPO[el.t]}`,
+        ayuda: 'Teclas 1 · 2 · 3, o di «metal», «no metal» o «gas noble»',
+        comprobar: e => {
+          let id = e.opcion;
+          if (!id) for (const t of e.textos) { id = clasificarVoz(t); if (id) break; }
+          if (!id) return { nada: true };
+          return { parcial: id === el.t ? 1 : 0, elegida: id };
+        }
+      };
+    }
+  },
+
+  ubicacion: {
+    nombre: '¿Dónde está?', corto: 'Ubicación', icono: '🗺️', color: 'verde',
+    lema: 'Encuentra su casilla en la tabla periódica', voz: false,
+    pool: () => ELEMENTOS,
+    pregunta(el) {
+      return {
+        tipo: 'tabla', grande: el.s, pequeno: el.n, enunciado: 'Toca su casilla',
+        solucion: `${el.s}: periodo ${el.p}, columna ${etiquetaCol(el.g)}`, el,
+        comprobar: e => ({ parcial: (e.celda.p === el.p && (e.celda.g === el.g || e.celda.g === el.g2)) ? 1 : 0, celda: e.celda })
+      };
+    }
+  }
+};
+Object.keys(TEMATICAS).forEach(id => TEMATICAS[id].id = id);
+
+const MODOS = {
+  mision: { nombre: 'Misión', ico: '🎯', desc: '10 retos · 3 vidas' },
+  crono:  { nombre: 'Contrarreloj', ico: '⏱️', desc: '60 segundos · fallo = −3 s' },
+  jefe:   { nombre: 'Jefe final', ico: '👾', desc: 'Tus elementos más rebeldes' }
+};
+
+const RANGOS = [[0, 'Aprendiz de laboratorio'], [150, 'Cazaátomos'], [400, 'Mente reactiva'],
+                [800, 'Alquimista'], [1500, 'Leyenda periódica'], [3000, 'Maestría de la tabla']];
+const nivelDe = xp => Math.floor(Math.sqrt(xp / 25)) + 1;
+const xpNivel = n => 25 * (n - 1) * (n - 1);
+const rangoDe = xp => RANGOS.filter(r => xp >= r[0]).pop()[1];
+
+/* =========================================================
+   SONIDO
+   ========================================================= */
+const Sonido = {
+  on: almacen.get('qq_sonido', '1') === '1', ctx: null,
+  tono(f, d, tipo, t0, vol) {
+    if (!this.on) return;
+    try {
+      this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t = c.currentTime + (t0 || 0);
+      o.type = tipo || 'triangle'; o.frequency.value = f;
+      g.gain.setValueAtTime(vol || .15, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+      o.connect(g).connect(c.destination); o.start(t); o.stop(t + d);
+    } catch (e) {}
+  },
+  ok() { this.tono(660, .1); this.tono(990, .14, 'triangle', .08); },
+  casi() { this.tono(520, .15); },
+  ko() { this.tono(160, .3, 'sawtooth', 0, .07); },
+  fin() { [523, 659, 784, 1047].forEach((f, i) => this.tono(f, .2, 'triangle', i * .11)); }
+};
+
+/* =========================================================
+   VOZ (reconocimiento en el navegador, no se graba nada)
+   ========================================================= */
+const Voz = {
+  SR: window.SpeechRecognition || window.webkitSpeechRecognition,
+  rec: null, activa: false, bloqueada: false, manos: almacen.get('qq_manos', '0') === '1', reintentos: 0,
+  disponible() { return !!this.SR && !this.bloqueada; },
+  escuchar() {
+    if (!this.disponible() || this.activa || !esperandoVoz()) return;
+    const r = new this.SR();
+    r.lang = 'es-ES'; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
+    r.onresult = ev => {
+      const res = ev.results[ev.results.length - 1];
+      $('#j-oido').textContent = '🎧 «' + res[0].transcript + '»';
+      if (res.isFinal) {
+        const alts = Array.from({length: res.length}, (_, i) => res[i].transcript);
+        this.parar();
+        responder({ textos: alts, escrito: false });
+      }
+    };
+    r.onerror = ev => {
+      if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(ev.error)) {
+        this.bloqueada = true; this.manos = false;
+        const av = $('#j-aviso-voz'); av.hidden = false;
+        av.textContent = '🎤 El micrófono está bloqueado. Pulsa el candado de la barra de direcciones y permite el micrófono. Mientras, puedes escribir.';
+        pintarRespuesta();
+      }
+    };
+    r.onend = () => {
+      this.activa = false; pintarMic();
+      if (this.manos && esperandoVoz() && this.reintentos++ < 6) setTimeout(() => this.escuchar(), 300);
+    };
+    try { r.start(); this.rec = r; this.activa = true; pintarMic(); } catch (e) { this.activa = false; }
+  },
+  parar() {
+    if (this.rec) { try { this.rec.abort(); } catch (e) {} }
+    this.activa = false; pintarMic();
+  },
+  alternar() { this.activa ? this.parar() : (this.reintentos = 0, this.escuchar()); }
+};
+function esperandoVoz() {
+  const P = E.partida;
+  return !!(P && P.actual && !P.respondida && P.tem.voz && P.actual.tipo !== 'tabla' && $('#p-juego').classList.contains('activa'));
+}
+function pintarMic() {
+  const m = $('#j-mic'); if (m) m.classList.toggle('escuchando', Voz.activa);
+  $('#btn-manos').classList.toggle('on', Voz.manos);
+  if (!Voz.activa && $('#j-oido').textContent.startsWith('Escuchando')) $('#j-oido').textContent = '';
+  if (Voz.activa) $('#j-oido').textContent = 'Escuchando…';
+}
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+const E = {
+  usuario: null, alumno: null,
+  progreso: { xp: 0, mejorRacha: 0, partidas: 0, stats: {} },
+  resumen: { suma: 0, max: 0, intentos: 0 },
+  tem: null, opts: { dir: almacen.get('qq_dir', 'mixto') }, modo: null, partida: null
+};
+
+/* =========================================================
+   ARRANQUE E IDENTIFICACIÓN
+   ========================================================= */
+function errorFatal(msg) {
+  $('#error-txt').textContent = typeof msg === 'string' ? msg : (msg && msg.message) || 'Error de conexión';
+  mostrar('p-error');
+}
+
+/* Comunicación con Apps Script. text/plain evita la comprobación previa de CORS. */
+function api(accion, datos) {
+  return fetch(CONFIG.API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ accion, token: E.token, datos: datos || null })
+  })
+    .then(r => r.json())
+    .then(r => {
+      if (r.error === 'SESION') { pedirSesion(true); throw new Error('Sesión caducada'); }
+      if (r.error) throw new Error(r.error);
+      return r.datos;
+    });
+}
+
+function pedirSesion(caducada) {
+  almacen.set('qq_token', '');
+  $('#sesion-txt').textContent = caducada
+    ? 'Tu sesión ha caducado. Vuelve a entrar desde el enlace de Classroom.'
+    : 'Para guardar tus puntos, abre el juego desde el enlace de Classroom.';
+  $('#sesion-link').href = CONFIG.URL_ENTRADA;
+  mostrar('p-sesion');
+}
+
+function init() {
+  // El pase llega en la dirección (#t=...) desde la página de entrada; se guarda y se borra de la barra
+  const m = location.hash.match(/[#&]t=([\w.-]+)/);
+  if (m) { almacen.set('qq_token', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  E.token = almacen.get('qq_token', '');
+  if (!E.token) return pedirSesion(false);
+  if (/PEGA_AQUI/.test(CONFIG.API_URL)) return errorFatal('Falta configurar API_URL en index.html');
+
+  api('usuario').then(r => {
+    Object.assign(CONFIG, r.config);
+    E.usuario = r.mail; E.progreso = r.progreso; E.resumen = r.resumen;
+    if (r.alumno) { E.alumno = r.alumno; enviarPendientes(); irMenu(); }
+    else abrirRegistro();
+  }).catch(e => { if (!$('#p-sesion').classList.contains('activa')) errorFatal(e); });
+}
+
+function abrirRegistro() {
+  $('#reg-mail').textContent = E.usuario;
+  $('#reg-curso').innerHTML = '<option value="">Elige tu curso…</option>' + CONFIG.cursos.map(c => `<option>${esc(c)}</option>`).join('');
+  mostrar('p-registro');
+}
+$('#form-registro').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const d = { curso: $('#reg-curso').value, nombre: $('#reg-nombre').value.trim(), apellidos: $('#reg-apellidos').value.trim() };
+  if (!d.curso || !d.nombre || !d.apellidos) return toast('Rellena los tres campos');
+  $('#reg-btn').disabled = true;
+  api('registrar', d)
+    .then(al => { E.alumno = al; irMenu(); })
+    .catch(e => { $('#reg-btn').disabled = false; toast('No se pudo guardar: ' + e.message); });
+});
+
+/* =========================================================
+   MENÚ
+   ========================================================= */
+function irMenu() {
+  limpiarPartida();
+  const xp = E.progreso.xp, n = nivelDe(xp), a = xpNivel(n), b = xpNivel(n + 1);
+  const nom = E.alumno.nombre || '';
+  $('#m-avatar').textContent = (nom[0] || '?').toUpperCase() + ((E.alumno.apellidos || '')[0] || '').toUpperCase();
+  $('#m-nombre').textContent = `${nom} ${E.alumno.apellidos}`.trim() + (E.alumno.curso ? ' · ' + E.alumno.curso : '');
+  $('#m-rango').textContent = rangoDe(xp);
+  $('#m-nivel').textContent = n;
+  $('#m-xp-barra').style.width = Math.round(100 * (xp - a) / (b - a)) + '%';
+  $('#m-xp-txt').textContent = `${xp} XP · faltan ${b - xp} para el nivel ${n + 1}`;
+  $('#m-tema-etq').textContent = 'Puntos ' + CONFIG.tema;
+  $('#m-tema-pts').textContent = E.resumen.suma;
+  $('#m-tema-rec').textContent = `Récord ${E.resumen.max} · ${E.resumen.intentos} partidas`;
+  pintarSonido();
+
+  $('#m-tematicas').innerHTML = Object.values(TEMATICAS).map(t => {
+    const pool = t.pool();
+    const dom = pool.filter(el => { const s = E.progreso.stats[t.id + ':' + el.s]; return s && s[0] >= 2 && s[0] > s[1]; }).length;
+    const pct = Math.round(100 * dom / pool.length);
+    return `<button class="mision c-${t.color}" onclick="abrirModos('${t.id}')">
+      <div class="ico">${t.icono}</div><h3>${esc(t.nombre)}</h3><p>${esc(t.lema)}</p>
+      <div class="dominio">Dominio ${pct}% · ${dom}/${pool.length}<div class="barra"><i style="width:${pct}%"></i></div></div>
+    </button>`;
+  }).join('');
+  mostrar('p-menu');
+}
+
+function pintarSonido() { $('#btn-sonido').textContent = Sonido.on ? '🔊' : '🔇'; }
+$('#btn-sonido').onclick = () => { Sonido.on = !Sonido.on; almacen.set('qq_sonido', Sonido.on ? '1' : '0'); pintarSonido(); Sonido.ok(); };
+
+function debiles(tem) {
+  return tem.pool()
+    .map(el => { const s = E.progreso.stats[tem.id + ':' + el.s] || [0, 0]; return { el, peso: s[1] - s[0] * .5, ko: s[1] }; })
+    .filter(x => x.ko > 0 && x.peso > 0)
+    .sort((a, b) => b.peso - a.peso).slice(0, 10).map(x => x.el);
+}
+
+function abrirModos(id) {
+  const t = E.tem = TEMATICAS[id];
+  $('#mo-icono').textContent = t.icono;
+  $('#mo-titulo').textContent = t.nombre;
+  $('#mo-lema').textContent = t.lema;
+  const dirs = [['sn', 'Símbolo → Nombre'], ['ns', 'Nombre → Símbolo'], ['mixto', 'Mezcla']];
+  $('#mo-dir').innerHTML = t.direcciones ? dirs.map(([k, txt]) =>
+    `<button class="chip ${E.opts.dir === k ? 'on' : ''}" onclick="elegirDir('${k}')">${txt}</button>`).join('') : '';
+  const nDeb = debiles(t).length;
+  $('#mo-lista').innerHTML = Object.entries(MODOS).map(([k, m]) => {
+    const bloqueado = k === 'jefe' && nDeb < 4;
+    const desc = bloqueado ? `🔒 Aparece cuando tengas 4 elementos pendientes (llevas ${nDeb})` : m.desc;
+    return `<button class="modo" ${bloqueado ? 'disabled' : ''} onclick="empezar('${k}')">
+      <div class="ico">${m.ico}</div><b>${m.nombre}</b><span>${desc}</span></button>`;
+  }).join('');
+  mostrar('p-modos');
+}
+function elegirDir(k) { E.opts.dir = k; almacen.set('qq_dir', k); abrirModos(E.tem.id); }
+
+/* =========================================================
+   PARTIDA
+   ========================================================= */
+function empezar(modo) {
+  limpiarPartida();
+  const tem = E.tem;
+  E.modo = modo;
+  E.partida = {
+    tem, modo, opts: { ...E.opts }, puntos: 0, aciertos: 0, fallos: 0, racha: 0, rachaMax: 0,
+    vidas: modo === 'crono' ? 0 : 3, n: 0, items: {}, fallados: new Map(), recientes: [],
+    cola: [], debiles: modo === 'jefe' ? debiles(tem) : [], jefeMax: 8, jefeVida: 8,
+    fin: modo === 'crono' ? Date.now() + 60000 : 0, inicio: Date.now(),
+    actual: null, el: null, respondida: false, tSig: null, timer: null
+  };
+  $('#j-jefe').hidden = modo !== 'jefe';
+  $('#j-aviso-voz').hidden = !Voz.bloqueada;
+  if (Voz.bloqueada) $('#j-aviso-voz').textContent = '🎤 El micrófono está bloqueado. Pulsa el candado de la barra de direcciones y permite el micrófono. Mientras, puedes escribir.';
+  mostrar('p-juego');
+  if (modo === 'crono') E.partida.timer = setInterval(tic, 100);
+  siguiente();
+}
+
+function limpiarPartida() {
+  const P = E.partida;
+  if (P) { clearInterval(P.timer); clearTimeout(P.tSig); }
+  Voz.parar();
+  E.partida = null;
+}
+
+function abandonar() {
+  if (confirm('¿Abandonar la misión? Esta partida no se guardará.')) irMenu();
+}
+
+function tic() {
+  const P = E.partida; if (!P) return;
+  const resta = Math.max(0, P.fin - Date.now());
+  const i = $('#j-prog'); i.style.width = (resta / 600) + '%'; i.classList.toggle('peligro', resta < 10000);
+  $('#j-prog-txt').textContent = Math.ceil(resta / 1000) + ' s';
+  if (resta <= 0) terminar();
+}
+
+function elegirElemento(P) {
+  if (P.modo === 'jefe') {
+    if (!P.cola.length) P.cola = barajar(P.debiles);
+    return P.cola.shift();
+  }
+  const pool = P.tem.pool().filter(el => !P.recientes.includes(el.s));
+  const peso = el => {
+    const s = E.progreso.stats[P.tem.id + ':' + el.s];
+    return s ? Math.max(.4, 1 + s[1] * 1.5 - s[0] * .4) : 2;
+  };
+  let total = pool.reduce((a, el) => a + peso(el), 0), r = Math.random() * total;
+  for (const el of pool) { r -= peso(el); if (r <= 0) return el; }
+  return pool[pool.length - 1];
+}
+
+function siguiente() {
+  const P = E.partida; if (!P) return;
+  clearTimeout(P.tSig);
+  if (P.modo === 'mision' && (P.n >= 10 || P.vidas <= 0)) return terminar();
+  if (P.modo === 'jefe' && (P.jefeVida <= 0 || P.vidas <= 0)) return terminar();
+  if (P.modo === 'crono' && Date.now() >= P.fin) return terminar();
+
+  const el = elegirElemento(P);
+  P.el = el;
+  P.recientes.push(el.s); if (P.recientes.length > 4) P.recientes.shift();
+  P.actual = P.tem.pregunta(el, P.opts);
+  P.respondida = false;
+  Voz.reintentos = 0;
+  pintarPregunta();
+  if (Voz.manos && esperandoVoz()) setTimeout(() => Voz.escuchar(), 250);
+}
+
+function pintarHud() {
+  const P = E.partida;
+  $('#j-vidas').innerHTML = P.modo === 'crono' ? '⏱️' :
+    [0, 1, 2].map(i => `<span class="${i < P.vidas ? '' : 'perdida'}">❤️</span>`).join('');
+  $('#j-puntos').textContent = P.puntos;
+  const mult = multiplicador(P.racha);
+  $('#j-combo').textContent = mult > 1 ? '×' + mult : (P.racha ? '🔥' + P.racha : '');
+  if (P.modo === 'mision') { $('#j-prog').style.width = (P.n * 10) + '%'; $('#j-prog-txt').textContent = P.n + '/10'; }
+  if (P.modo === 'jefe') {
+    $('#j-prog').style.width = (100 * (P.jefeMax - P.jefeVida) / P.jefeMax) + '%';
+    $('#j-prog-txt').textContent = (P.jefeMax - P.jefeVida) + '/' + P.jefeMax;
+    $('#j-jefe-vida').style.width = (100 * P.jefeVida / P.jefeMax) + '%';
+  }
+}
+const multiplicador = racha => 1 + Math.min(2, Math.floor(racha / 3));
+
+function pintarPregunta() {
+  const P = E.partida, q = P.actual;
+  pintarHud();
+  const carta = $('#j-carta'); carta.className = 'carta';
+  $('#j-enunciado').textContent = q.enunciado;
+  const g = $('#j-grande'); g.textContent = q.grande; g.className = 'grande' + (q.largo ? ' largo' : '');
+  $('#j-pequeno').textContent = q.pequeno || '';
+  $('#j-huecos').innerHTML = q.huecos ? q.huecos.map(() => '<span class="hueco">?</span>').join('') : '';
+  $('#j-feedback').innerHTML = '';
+  $('#j-oido').textContent = '';
+  pintarRespuesta();
+}
+
+function pintarRespuesta() {
+  const P = E.partida; if (!P || !P.actual) return;
+  const q = P.actual, zona = $('#j-respuesta');
+  const conVoz = P.tem.voz && Voz.disponible();
+  if (q.tipo === 'texto') {
+    zona.innerHTML = `<div class="fila-texto">
+        ${conVoz ? '<button class="mic" id="j-mic" title="Hablar">🎤</button>' : ''}
+        <input id="j-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(q.placeholder)}">
+        <button class="btn lanzar" id="j-lanzar">Lanzar</button>
+      </div><p class="ayuda">${esc(conVoz ? q.ayuda : 'Escribe tu respuesta y pulsa Enter')}</p>`;
+    const inp = $('#j-input');
+    inp.addEventListener('keydown', ev => {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault(); ev.stopPropagation();
+      if (E.partida.respondida) return continuar();
+      if (!inp.value.trim()) { if (conVoz) Voz.alternar(); return; }
+      responder({ textos: [inp.value], escrito: true });
+    });
+    inp.addEventListener('input', () => { if (Voz.activa) Voz.parar(); });
+    $('#j-lanzar').onclick = () => {
+      if (E.partida.respondida) return continuar();
+      if (inp.value.trim()) responder({ textos: [inp.value], escrito: true });
+    };
+    if (conVoz) $('#j-mic').onclick = () => { Voz.alternar(); inp.focus(); };
+    setTimeout(() => inp.focus(), 50);
+  } else if (q.tipo === 'opciones') {
+    zona.innerHTML = `<div class="opciones">${q.opciones.map(o =>
+      `<button class="opcion" data-id="${o.id}">${esc(o.txt)}<small>tecla ${o.tecla}</small></button>`).join('')}</div>
+      <p class="ayuda">${conVoz ? '<button class="mic" id="j-mic" style="width:52px;height:44px;font-size:20px;vertical-align:middle">🎤</button> ' : ''}${esc(conVoz ? q.ayuda : 'Teclas 1 · 2 · 3')}</p>`;
+    zona.querySelectorAll('.opcion').forEach(b => b.onclick = () => responder({ opcion: b.dataset.id, textos: [] }));
+    if (conVoz) $('#j-mic').onclick = () => Voz.alternar();
+  } else if (q.tipo === 'tabla') {
+    zona.innerHTML = tablaHTML();
+    zona.querySelectorAll('.celda').forEach(c => c.onclick = () =>
+      responder({ celda: { p: +c.dataset.p, g: +c.dataset.g }, textos: [] }));
+  }
+  pintarMic();
+}
+
+function existeCelda(p, g) {
+  if (p === 1) return g === 1 || g === 17 || g === 18;
+  if (p <= 3) return g <= 2 || g >= 13;
+  if (p <= 6) return true;
+  return g <= 5;
+}
+function tablaHTML() {
+  let h = '<div class="tabla"><span></span>';
+  for (let g = 1; g <= 18; g++) h += `<span class="cab">${etiquetaCol(g)}</span>`;
+  for (let p = 1; p <= 7; p++) {
+    h += `<span class="per">${p}</span>`;
+    for (let g = 1; g <= 18; g++) {
+      h += existeCelda(p, g) ? `<button class="celda" data-p="${p}" data-g="${g}"></button>` : '<span class="hueco-t"></span>';
+    }
+  }
+  return h + '</div>';
+}
+
+/* =========================================================
+   RESPONDER
+   ========================================================= */
+function responder(entrada) {
+  const P = E.partida;
+  if (!P || P.respondida || !P.actual) return;
+  if (P.modo === 'crono' && Date.now() >= P.fin) return terminar();
+  const q = P.actual, el = P.el;
+  const r = q.comprobar(entrada);
+  if (r.nada) { toast('No te he entendido 🤔 Prueba otra vez'); if (Voz.manos) setTimeout(() => Voz.escuchar(), 400); return; }
+
+  P.respondida = true;
+  Voz.parar();
+  const perfecto = r.parcial >= 1, casi = !perfecto && r.parcial >= .5;
+  const it = P.items[el.s] = P.items[el.s] || { ok: 0, ko: 0 };
+  const clave = P.tem.id + ':' + el.s;
+  const st = E.progreso.stats[clave] = E.progreso.stats[clave] || [0, 0];
+  let html = '';
+
+  if (perfecto) {
+    it.ok++; st[0]++;
+    P.racha++; P.rachaMax = Math.max(P.rachaMax, P.racha); P.aciertos++;
+    const pts = 10 * multiplicador(P.racha);
+    P.puntos += pts;
+    if (P.modo === 'jefe') { P.jefeVida--; golpeJefe(); }
+    html = `<span class="pts">+${pts}</span> ${q.tipo === 'texto' ? '<span class="sol">' + esc(q.solucion) + '</span>' : '¡Correcto!'}`;
+    $('#j-carta').classList.add('ok');
+    Sonido.ok();
+    if (P.racha && P.racha % 3 === 0) { const c = $('#j-combo'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+  } else {
+    it.ko++; st[1]++;
+    P.racha = 0; P.fallos++;
+    P.fallados.set(el.s, q.solucion);
+    const pts = Math.round(10 * r.parcial);
+    P.puntos += pts;
+    if (!casi) {
+      if (P.modo === 'crono') P.fin -= 3000; else P.vidas--;
+    }
+    html = (casi ? `<span class="pts" style="color:var(--amarillo)">¡Casi! +${pts}</span> ` : '❌ ') + `<span class="sol">${esc(q.solucion)}</span>`;
+    $('#j-carta').classList.add(casi ? 'casi' : 'ko');
+    casi ? Sonido.casi() : Sonido.ko();
+  }
+  if (r.aviso) html += `<span class="aviso">${r.aviso}</span>`;
+
+  // Marcas visuales según tipo
+  if (q.huecos) {
+    const dadas = new Set(r.aciertos || []);
+    $('#j-huecos').innerHTML = q.huecos.map(v => `<span class="hueco ${dadas.has(v) ? 'ok' : 'falta'}">${fmtVal(v)}</span>`).join('');
+  }
+  if (q.tipo === 'opciones') {
+    document.querySelectorAll('.opcion').forEach(b => {
+      if (b.dataset.id === q.correcta) b.classList.add('correcta');
+      else if (b.dataset.id === r.elegida) b.classList.add('elegida-mal');
+    });
+  }
+  if (q.tipo === 'tabla') {
+    document.querySelectorAll('.celda').forEach(c => {
+      const p = +c.dataset.p, g = +c.dataset.g;
+      if (p === el.p && (g === el.g || g === el.g2)) { c.classList.add('correcta'); c.textContent = el.s; }
+      else if (r.celda && p === r.celda.p && g === r.celda.g && !perfecto) c.classList.add('elegida-mal');
+    });
+  }
+
+  if (!perfecto) html += '<span class="seguir">Enter o clic para seguir</span>';
+  $('#j-feedback').innerHTML = html;
+  P.n++;
+  pintarHud();
+  P.tSig = setTimeout(siguiente, perfecto ? 800 : 2200);
+}
+
+function continuar() { const P = E.partida; if (P && P.respondida) siguiente(); }
+
+function golpeJefe() {
+  const j = $('#j-jefe'); j.classList.remove('golpe'); void j.offsetWidth; j.classList.add('golpe');
+}
+
+document.addEventListener('keydown', ev => {
+  if (!$('#p-juego').classList.contains('activa')) return;
+  const P = E.partida; if (!P || !P.actual) return;
+  if (ev.key === 'Escape') { Voz.parar(); return; }
+  if (P.respondida) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); continuar(); } return; }
+  if (P.actual.tipo === 'opciones') {
+    const o = P.actual.opciones.find(o => o.tecla === ev.key);
+    if (o) responder({ opcion: o.id, textos: [] });
+  }
+});
+$('#j-carta').addEventListener('click', continuar);
+$('#btn-manos').onclick = () => {
+  if (!Voz.disponible()) return toast('El micrófono no está disponible aquí');
+  Voz.manos = !Voz.manos; almacen.set('qq_manos', Voz.manos ? '1' : '0');
+  toast(Voz.manos ? '🎙️ Manos libres activado' : 'Manos libres desactivado');
+  if (Voz.manos) { Voz.reintentos = 0; Voz.escuchar(); } else Voz.parar();
+  pintarMic();
+};
+
+/* =========================================================
+   FIN DE PARTIDA
+   ========================================================= */
+function terminar() {
+  const P = E.partida; if (!P) return;
+  clearInterval(P.timer); clearTimeout(P.tSig); Voz.parar();
+  E.partida = null;
+
+  let titulo, estrellas, bonus = 0;
+  if (P.modo === 'mision') {
+    const completa = P.vidas > 0;
+    if (completa && P.fallos === 0) bonus = 20;
+    titulo = !completa ? '¡Sin vidas! 💔' : bonus ? '¡Partida perfecta! +20' : '¡Misión cumplida!';
+    estrellas = P.aciertos >= 9 ? 3 : P.aciertos >= 7 ? 2 : P.aciertos >= 4 ? 1 : 0;
+  } else if (P.modo === 'crono') {
+    titulo = '¡Tiempo!';
+    estrellas = P.aciertos >= 15 ? 3 : P.aciertos >= 10 ? 2 : P.aciertos >= 5 ? 1 : 0;
+  } else {
+    const gana = P.jefeVida <= 0;
+    if (gana) bonus = 30;
+    titulo = gana ? '¡Jefe derrotado! +30' : 'El jefe ha ganado esta vez 👾';
+    estrellas = gana ? Math.max(1, P.vidas) : 0;
+  }
+  P.puntos += bonus;
+
+  const xpAntes = E.progreso.xp, nivelAntes = nivelDe(xpAntes);
+  E.progreso.xp += P.puntos;
+  E.progreso.partidas++;
+  E.progreso.mejorRacha = Math.max(E.progreso.mejorRacha, P.rachaMax);
+  E.resumen.suma += P.puntos; E.resumen.max = Math.max(E.resumen.max, P.puntos); E.resumen.intentos++;
+  const nivelDespues = nivelDe(E.progreso.xp);
+
+  $('#f-estrellas').innerHTML = [0, 1, 2].map(i =>
+    `<span class="${i < estrellas ? '' : 'apagada'}" style="animation-delay:${i * .15}s">⭐</span>`).join('');
+  $('#f-titulo').textContent = titulo;
+  $('#f-puntos').textContent = P.puntos;
+  $('#f-aciertos').textContent = P.aciertos + '/' + (P.aciertos + P.fallos);
+  $('#f-racha').textContent = P.rachaMax;
+  const sub = $('#f-subida');
+  if (nivelDespues > nivelAntes) {
+    sub.hidden = false;
+    sub.innerHTML = `🆙 ¡Subes al nivel <b>${nivelDespues}</b>!` +
+      (rangoDe(E.progreso.xp) !== rangoDe(xpAntes) ? ` Nuevo rango: <b>${esc(rangoDe(E.progreso.xp))}</b>` : '');
+  } else sub.hidden = true;
+  $('#f-fallos').innerHTML = P.fallados.size ? `<div class="repaso"><h4>Para repasar</h4><div class="repaso-lista">${
+    [...P.fallados.values()].map(s => `<span>${esc(s)}</span>`).join('')}</div></div>` : '';
+  $('#f-otra').onclick = () => empezar(P.modo);
+  mostrar('p-fin');
+  Sonido.fin();
+
+  guardar({
+    mail: E.usuario,
+    tematica: P.tem.corto, tematicaId: P.tem.id, modo: MODOS[P.modo].nombre,
+    puntos: P.puntos, aciertos: P.aciertos, fallos: P.fallos,
+    duracion: Math.round((Date.now() - P.inicio) / 1000), racha: P.rachaMax,
+    items: Object.entries(P.items).map(([elemento, v]) => ({ elemento, ok: v.ok, ko: v.ko }))
+  });
+}
+
+function guardar(payload) {
+  $('#f-guardado').textContent = '💾 Guardando en el libro de récords…';
+  api('guardar', payload).then(r => {
+    E.progreso = r.progreso; E.resumen = r.resumen;
+    $('#f-guardado').textContent = '✅ Guardado';
+  }).catch(() => {
+    let lista;
+    try { lista = JSON.parse(almacen.get('qq_pendientes', '[]')); } catch (e) { lista = []; }
+    lista.push(payload); almacen.set('qq_pendientes', JSON.stringify(lista.slice(-20)));
+    $('#f-guardado').textContent = '⚠️ No se pudo guardar ahora. Se enviará la próxima vez que entres.';
+  });
+}
+
+function enviarPendientes() {
+  let lista;
+  try { lista = JSON.parse(almacen.get('qq_pendientes', '[]')); } catch (e) { lista = []; }
+  const mias = lista.filter(p => p.mail === E.usuario);
+  const otras = lista.filter(p => p.mail !== E.usuario);
+  if (!mias.length) return;
+  const p = mias.shift();
+  api('guardar', p).then(r => {
+    E.progreso = r.progreso; E.resumen = r.resumen;
+    almacen.set('qq_pendientes', JSON.stringify(otras.concat(mias)));
+    if ($('#p-menu').classList.contains('activa')) irMenu();
+    enviarPendientes();
+  }).catch(() => {});
+}
+
+init();
+</script>
+
+</body>
+</html>
