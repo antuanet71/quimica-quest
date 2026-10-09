@@ -684,7 +684,7 @@ const Sonido = {
    ========================================================= */
 const Voz = {
   SR: window.SpeechRecognition || window.webkitSpeechRecognition,
-  rec: null, activa: false, bloqueada: false, manos: almacen.get('qq_manos', '0') === '1', reintentos: 0,
+  rec: null, activa: false, bloqueada: false, manos: false, reintentos: 0,
   disponible() { return !!this.SR && !this.bloqueada; },
   escuchar() {
     if (!this.disponible() || this.activa || !esperandoVoz()) return;
@@ -877,6 +877,9 @@ function empezar(modo) {
     actual: null, el: null, respondida: false, tSig: null, timer: null
   };
   $('#j-jefe').hidden = modo !== 'jefe';
+  // Micro automático: activado por defecto solo en Elementos y símbolos (se puede cambiar con 🎙️)
+  Voz.manos = Voz.disponible() && tem.voz &&
+    almacen.get('qq_manos_' + tem.id, tem.id === 'elementos' ? '1' : '0') === '1';
   $('#j-aviso-voz').hidden = !Voz.bloqueada;
   if (Voz.bloqueada) $('#j-aviso-voz').textContent = '🎤 El micrófono está bloqueado. Pulsa el candado de la barra de direcciones y permite el micrófono. Mientras, puedes escribir.';
   mostrar('p-juego');
@@ -1110,7 +1113,8 @@ document.addEventListener('keydown', ev => {
 $('#j-carta').addEventListener('click', continuar);
 $('#btn-manos').onclick = () => {
   if (!Voz.disponible()) return toast('El micrófono no está disponible aquí');
-  Voz.manos = !Voz.manos; almacen.set('qq_manos', Voz.manos ? '1' : '0');
+  Voz.manos = !Voz.manos;
+  if (E.partida) almacen.set('qq_manos_' + E.partida.tem.id, Voz.manos ? '1' : '0');
   toast(Voz.manos ? '🎙️ Manos libres activado' : 'Manos libres desactivado');
   if (Voz.manos) { Voz.reintentos = 0; Voz.escuchar(); } else Voz.parar();
   pintarMic();
